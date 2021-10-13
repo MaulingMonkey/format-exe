@@ -11,7 +11,7 @@ use bytemuck::*;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct OptionalHeader64 {
     pub magic:                      u16le,
-    pub linker_version:             [u8; 2],
+    pub linker_version:             MajorMinorVersion<u8>,
     pub size_of_code:               u32,
     pub size_of_initialized_data:   u32,
     pub size_of_uninitialized_data: u32,
@@ -21,9 +21,9 @@ pub struct OptionalHeader64 {
     pub image_base:                 u64, // 64!
     pub section_alignment:          u32,
     pub file_alignment:             u32,
-    pub operating_system_version:   [u16; 2],
-    pub image_version:              [u16; 2],
-    pub subsystem_version:          [u16; 2],
+    pub operating_system_version:   MajorMinorVersion<u16>,
+    pub image_version:              MajorMinorVersion<u16>,
+    pub subsystem_version:          MajorMinorVersion<u16>,
     pub win32_version:              u32,
     pub size_of_image:              u32,
     pub size_of_headers:            u32,
@@ -43,7 +43,7 @@ impl From<RawOptionalHeader64> for OptionalHeader64 {
     fn from(value: RawOptionalHeader64) -> Self {
         Self {
             magic:                      value.magic,
-            linker_version:             [value.linker_version[0].into(), value.linker_version[1].into()],
+            linker_version:             value.linker_version.into(),
             size_of_code:               value.size_of_code.into(),
             size_of_initialized_data:   value.size_of_initialized_data.into(),
             size_of_uninitialized_data: value.size_of_uninitialized_data.into(),
@@ -53,9 +53,9 @@ impl From<RawOptionalHeader64> for OptionalHeader64 {
             image_base:                 value.image_base.into(),
             section_alignment:          value.section_alignment.into(),
             file_alignment:             value.file_alignment.into(),
-            operating_system_version:   [value.operating_system_version[0].into(), value.operating_system_version[1].into()],
-            image_version:              [value.image_version[0].into(), value.image_version[1].into()],
-            subsystem_version:          [value.subsystem_version[0].into(), value.subsystem_version[1].into()],
+            operating_system_version:   value.operating_system_version.into(),
+            image_version:              value.image_version.into(),
+            subsystem_version:          value.subsystem_version.into(),
             win32_version:              value.win32_version.into(),
             size_of_image:              value.size_of_image.into(),
             size_of_headers:            value.size_of_headers.into(),
@@ -80,7 +80,7 @@ impl From<RawOptionalHeader64> for OptionalHeader64 {
 #[derive(Pod, Zeroable)]
 pub(crate) struct RawOptionalHeader64 {
     pub magic:                      u16le,
-    pub linker_version:             [u8le; 2],
+    pub linker_version:             MajorMinorVersion<u8le>,
     pub size_of_code:               u32le,
     pub size_of_initialized_data:   u32le,
     pub size_of_uninitialized_data: u32le,
@@ -90,9 +90,9 @@ pub(crate) struct RawOptionalHeader64 {
     pub image_base:                 u64le, // 64!
     pub section_alignment:          u32le,
     pub file_alignment:             u32le,
-    pub operating_system_version:   [u16le; 2],
-    pub image_version:              [u16le; 2],
-    pub subsystem_version:          [u16le; 2],
+    pub operating_system_version:   MajorMinorVersion<u16le>,
+    pub image_version:              MajorMinorVersion<u16le>,
+    pub subsystem_version:          MajorMinorVersion<u16le>,
     pub win32_version:              u32le,
     pub size_of_image:              u32le,
     pub size_of_headers:            u32le,
