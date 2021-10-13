@@ -79,3 +79,15 @@ impl Header {
         }
     }
 }
+
+
+
+/// Similarish to [IMAGE_NT_HEADERS32](https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32),
+/// but without the [`machine`](#structfield.machine)-dependent optional header
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+struct RawHeader {
+    pub signature:                  Signature,
+    pub file_header:                RawFileHeader,
+}

@@ -107,40 +107,6 @@ impl From<RawDataDirectories> for DataDirectories {
 
 
 
-/// Similarish to [IMAGE_NT_HEADERS32](https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32),
-/// but without the [`machine`](#structfield.machine)-dependent optional header
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
-pub(crate) struct RawHeader {
-    pub signature:                  Signature,
-    pub file_header:                RawFileHeader,
-}
-
-/// ## References
-/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32>
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
-pub(crate) struct RawNtHeaders32 {
-    pub signature:                  Signature,
-    pub file_header:                RawFileHeader,
-    pub optional_header:            RawOptionalHeader32,
-}
-
-/// ## References
-/// *   <https://docs.microsoft.com/en-us/windows/win64/api/winnt/ns-winnt-image_nt_headers64>
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
-pub(crate) struct RawNtHeaders64 {
-    pub signature:                  Signature,
-    pub file_header:                RawFileHeader,
-    pub optional_header:            RawOptionalHeader64,
-}
-
-
-
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
 #[repr(C)]
