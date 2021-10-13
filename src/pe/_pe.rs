@@ -5,6 +5,7 @@
 
 mod data_directories;               pub use data_directories::*;
 mod data_directory;                 pub use data_directory::*;
+mod dll_characteristics;            pub use dll_characteristics::*;
 mod file_header;                    pub use file_header::*;
 mod header;                         pub use header::*;
 mod machine;                        pub use machine::*;
