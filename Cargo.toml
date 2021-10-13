@@ -1,0 +1,13 @@
+# https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package]
+name                = "maulingmonkey-format-exe"
+version             = "0.0.0-git"
+edition             = "2018"
+repository          = "https://github.com/MaulingMonkey/format-exe"
+authors             = ["MaulingMonkey <git@maulingmonkey.com>"]
+readme              = "Readme.md"
+license             = "MIT OR Apache-2.0"
+
+[lib]
+path                = "src/_lib.rs"
