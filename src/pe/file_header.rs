@@ -53,6 +53,8 @@ pub(crate) struct RawFileHeader {
 bitflags::bitflags! {
     #[repr(transparent)]
     pub struct FileCharacteristics : u16 {
+        const NONE                      = 0;
+
         const RELOCS_STRIPPED           = 0x0001;
         const EXECUTABLE_IMAGE          = 0x0002;
         const LINE_NUMS_STRIPPED        = 0x0004;
@@ -60,7 +62,7 @@ bitflags::bitflags! {
 
         const AGGRESSIVE_WS_TRIM        = 0x0010;
         const LARGE_ADDRESS_AWARE       = 0x0020;
-        const _RESERVED_0040            = 0x0040;
+        #[doc(hidden)] const RESERVED_0040 = 0x0040;
         const BYTES_REVERSED_LO         = 0x0080;
 
         const MACHINE_32BIT             = 0x0100;
