@@ -1,5 +1,8 @@
 use crate::*;
+use super::*;
+
 use bytemuck::*;
+
 use std::io::{self, *};
 
 
@@ -18,7 +21,7 @@ pub struct SectionHeader {
     pub pointer_to_linenumbers:     u32,
     pub number_of_relocations:      u16,
     pub number_of_linenumbers:      u16,
-    pub characteristics:            u32,
+    pub characteristics:            SectionCharacteristics,
 }
 
 impl SectionHeader {
@@ -41,7 +44,7 @@ impl From<RawSectionHeader> for SectionHeader {
             pointer_to_linenumbers: value.pointer_to_linenumbers.into(),
             number_of_relocations:  value.number_of_relocations.into(),
             number_of_linenumbers:  value.number_of_linenumbers.into(),
-            characteristics:        value.characteristics.into(),
+            characteristics:        SectionCharacteristics::from_bits_truncate(value.characteristics.into()),
         }
     }
 }

@@ -12,6 +12,7 @@ mod machine;                        pub use machine::*;
 mod optional_header_32;             pub use optional_header_32::*;
 mod optional_header_64;             pub use optional_header_64::*;
 mod optional_header;                pub use optional_header::*;
+mod section_characteristics;        pub use section_characteristics::*;
 mod section_header;                 pub use section_header::*;
 mod subsystem;                      pub use subsystem::*;
 mod time_date;                      pub use time_date::*;
