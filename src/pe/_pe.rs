@@ -3,6 +3,7 @@
 //! ## References
 //! *   <https://wiki.osdev.org/PE>
 
+mod data_directory;                 pub use data_directory::*;
 mod file_header;                    pub use file_header::*;
 mod machine;                        pub use machine::*;
 mod optional_header_32;             pub use optional_header_32::*;
@@ -59,7 +60,7 @@ impl Header {
 
                 match magic {
                     IMAGE_NT_OPTIONAL_HDR32_MAGIC => {
-                        let mut o = OptionalHeader32 { magic, .. Default::default() };
+                        let mut o = RawOptionalHeader32 { magic, .. Default::default() };
                         let required = size_of_val(&o) - size_of::<RawDataDirectories>();
                         if optional_header_size < required {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!(
@@ -68,10 +69,10 @@ impl Header {
                             )));
                         }
                         read.read_exact(&mut bytes_of_mut(&mut o)[2..])?;
-                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader32(o)) })
+                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader32(o.into())) })
                     },
                     IMAGE_NT_OPTIONAL_HDR64_MAGIC => {
-                        let mut o = OptionalHeader64 { magic, .. Default::default() };
+                        let mut o = RawOptionalHeader64 { magic, .. Default::default() };
                         let required = size_of_val(&o) - size_of::<RawDataDirectories>();
                         if optional_header_size < required {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!(
@@ -80,7 +81,7 @@ impl Header {
                             )));
                         }
                         read.read_exact(&mut bytes_of_mut(&mut o)[2..])?;
-                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader64(o)) })
+                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader64(o.into())) })
                     },
                     IMAGE_ROM_OPTIONAL_HDR_MAGIC => {
                         Err(io::Error::new(io::ErrorKind::InvalidData, "pe::OptionalHeader::magic == IMAGE_ROM_OPTIONAL_HDR_MAGIC (unsupported value)"))
@@ -100,7 +101,6 @@ impl Header {
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
 pub struct DataDirectories {
     /// IMAGE_DIRECTORY_ENTRY_EXPORT
     pub export:             DataDirectory,
@@ -178,25 +178,6 @@ impl From<RawDataDirectories> for DataDirectories {
             delay_import:           value.delay_import.into(),
             com_descriptor:         value.com_descriptor.into(),
             _reserved:              value._reserved.into(),
-        }
-    }
-}
-
-/// ## References
-/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory>
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
-pub struct DataDirectory {
-    pub virtual_address:            u32,
-    pub size:                       u32,
-}
-
-impl From<RawDataDirectory> for DataDirectory {
-    fn from(value: RawDataDirectory) -> Self {
-        Self {
-            virtual_address:    value.virtual_address.into(),
-            size:               value.size.into(),
         }
     }
 }
@@ -298,16 +279,6 @@ pub(crate) struct RawDataDirectories {
     pub com_descriptor:     RawDataDirectory,
 
     pub(super) _reserved:   RawDataDirectory,
-}
-
-/// ## References
-/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory>
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
-pub(crate) struct RawDataDirectory {
-    pub virtual_address:            u32le,
-    pub size:                       u32le,
 }
 
 /// ## References

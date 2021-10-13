@@ -7,7 +7,6 @@ use super::*;
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header64>
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
 pub struct OptionalHeader64 {
     pub magic:                      u16le,
     pub linker_version:             [u8; 2],
