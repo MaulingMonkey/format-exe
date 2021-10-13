@@ -13,8 +13,4 @@ mod optional_header_64;             pub use optional_header_64::*;
 mod optional_header;                pub use optional_header::*;
 mod section_header;                 pub use section_header::*;
 
-use crate::*;
-
-use bytemuck::*;
-
-pub type Signature = abistr::CStrBuf<[u8; 4]>;
+type Signature = abistr::CStrBuf<[u8; 4]>;

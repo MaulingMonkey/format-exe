@@ -1,7 +1,7 @@
 use crate::*;
 use super::*;
 
-use bytemuck::bytes_of_mut;
+use bytemuck::*;
 
 use std::io::{self, *};
 use std::mem::{size_of, size_of_val};
