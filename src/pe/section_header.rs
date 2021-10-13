@@ -1,9 +1,13 @@
 use crate::*;
 use bytemuck::*;
+use std::io::{self, *};
+
 
 
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct SectionHeader {
     pub name:                       abistr::CStrBuf<[u8; 8]>,
     pub virtual_size:               u32,
@@ -15,6 +19,14 @@ pub struct SectionHeader {
     pub number_of_relocations:      u16,
     pub number_of_linenumbers:      u16,
     pub characteristics:            u32,
+}
+
+impl SectionHeader {
+    pub fn read_from(read: &mut impl Read) -> io::Result<Self> {
+        let mut s = RawSectionHeader::default();
+        read.read_exact(bytes_of_mut(&mut s))?;
+        Ok(s.into())
+    }
 }
 
 impl From<RawSectionHeader> for SectionHeader {

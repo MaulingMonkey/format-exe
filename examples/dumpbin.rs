@@ -36,4 +36,16 @@ fn main() {
     });
 
     dbg!(pe_header);
+
+    for isection in 0 .. pe_header.file_header.nsections {
+        let section_header = exe::pe::SectionHeader::read_from(&mut exe).unwrap_or_else(|err| {
+            eprintln!(
+                "error: unable to read pe::SectionHeader[{} of {}] from `{}`: {}",
+                isection, pe_header.file_header.nsections, exe_path.display(), err,
+            );
+            exit(1);
+        });
+
+        dbg!(section_header);
+    }
 }
