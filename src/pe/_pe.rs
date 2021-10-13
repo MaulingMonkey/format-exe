@@ -33,9 +33,9 @@ impl Header {
     /// * [`io::ErrorKind::InvalidData`] if [`signature`](#structfield.signature) ≠ `"PE\0\0"`
     /// * [`io::ErrorKind::UnexpectedEof`] if `read` didn't contain enough data
     pub fn read_from(read: &mut impl Read) -> io::Result<Self> {
-        let mut header = raw::Header::default();
+        let mut header = RawHeader::default();
         read.read_exact(bytes_of_mut(&mut header))?;
-        let raw::Header { signature, file_header } = header;
+        let RawHeader { signature, file_header } = header;
         if signature.buffer() != b"PE\0\0" {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "pe::Header::signature != \"PE\\0\\0\""));
         }
@@ -57,7 +57,7 @@ impl Header {
                 match magic {
                     IMAGE_NT_OPTIONAL_HDR32_MAGIC => {
                         let mut o = OptionalHeader32 { magic, .. Default::default() };
-                        let required = size_of_val(&o) - size_of::<raw::DataDirectories>();
+                        let required = size_of_val(&o) - size_of::<RawDataDirectories>();
                         if optional_header_size < required {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!(
                                 "pe::FileHeader::optional_header_size ({}) < required size for pe::OptionalHeader32 ({})",
@@ -69,7 +69,7 @@ impl Header {
                     },
                     IMAGE_NT_OPTIONAL_HDR64_MAGIC => {
                         let mut o = OptionalHeader64 { magic, .. Default::default() };
-                        let required = size_of_val(&o) - size_of::<raw::DataDirectories>();
+                        let required = size_of_val(&o) - size_of::<RawDataDirectories>();
                         if optional_header_size < required {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!(
                                 "pe::FileHeader::optional_header_size ({}) < required size for pe::OptionalHeader64 ({})",
@@ -169,8 +169,8 @@ pub enum OptionalHeader {
     OptionalHeader64(OptionalHeader64),
 }
 
-impl From<raw::OptionalHeader32> for OptionalHeader32 {
-    fn from(value: raw::OptionalHeader32) -> Self {
+impl From<RawOptionalHeader32> for OptionalHeader32 {
+    fn from(value: RawOptionalHeader32) -> Self {
         Self {
             magic:                      value.magic,
             linker_version:             [value.linker_version[0].into(), value.linker_version[1].into()],
@@ -203,8 +203,8 @@ impl From<raw::OptionalHeader32> for OptionalHeader32 {
     }
 }
 
-impl From<raw::OptionalHeader64> for OptionalHeader64 {
-    fn from(value: raw::OptionalHeader64) -> Self {
+impl From<RawOptionalHeader64> for OptionalHeader64 {
+    fn from(value: RawOptionalHeader64) -> Self {
         Self {
             magic:                      value.magic,
             linker_version:             [value.linker_version[0].into(), value.linker_version[1].into()],
@@ -301,8 +301,8 @@ pub struct DataDirectories {
     _reserved:              DataDirectory,
 }
 
-impl From<raw::DataDirectories> for DataDirectories {
-    fn from(value: raw::DataDirectories) -> Self {
+impl From<RawDataDirectories> for DataDirectories {
+    fn from(value: RawDataDirectories) -> Self {
         Self {
             export:                 value.export.into(),
             import:                 value.import.into(),
@@ -334,8 +334,8 @@ pub struct DataDirectory {
     pub size:                       u32,
 }
 
-impl From<raw::DataDirectory> for DataDirectory {
-    fn from(value: raw::DataDirectory) -> Self {
+impl From<RawDataDirectory> for DataDirectory {
+    fn from(value: RawDataDirectory) -> Self {
         Self {
             virtual_address:    value.virtual_address.into(),
             size:               value.size.into(),
@@ -345,208 +345,204 @@ impl From<raw::DataDirectory> for DataDirectory {
 
 
 
-mod raw {
-    use super::*;
+/// Similarish to [IMAGE_NT_HEADERS32](https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32),
+/// but without the [`machine`](#structfield.machine)-dependent optional header
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawHeader {
+    pub signature:                  Signature,
+    pub file_header:                RawFileHeader,
+}
 
-    /// Similarish to [IMAGE_NT_HEADERS32](https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32),
-    /// but without the [`machine`](#structfield.machine)-dependent optional header
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct Header {
-        pub signature:                  Signature,
-        pub file_header:                RawFileHeader,
-    }
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawNtHeaders32 {
+    pub signature:                  Signature,
+    pub file_header:                RawFileHeader,
+    pub optional_header:            RawOptionalHeader32,
+}
 
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_nt_headers32>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct NtHeaders32 {
-        pub signature:                  Signature,
-        pub file_header:                RawFileHeader,
-        pub optional_header:            OptionalHeader32,
-    }
-
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win64/api/winnt/ns-winnt-image_nt_headers64>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct NtHeaders64 {
-        pub signature:                  Signature,
-        pub file_header:                RawFileHeader,
-        pub optional_header:            OptionalHeader64,
-    }
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win64/api/winnt/ns-winnt-image_nt_headers64>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawNtHeaders64 {
+    pub signature:                  Signature,
+    pub file_header:                RawFileHeader,
+    pub optional_header:            RawOptionalHeader64,
+}
 
 
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header32>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct OptionalHeader32 {
-        pub magic:                      u16le,
-        pub linker_version:             [u8le; 2],
-        pub size_of_code:               u32le,
-        pub size_of_initialized_data:   u32le,
-        pub size_of_uninitialized_data: u32le,
-        pub address_of_entry_point:     u32le,
-        pub base_of_code:               u32le,
-        pub base_of_data:               u32le,
-        pub image_base:                 u32le,
-        pub section_alignment:          u32le,
-        pub file_alignment:             u32le,
-        pub operating_system_version:   [u16le; 2],
-        pub image_version:              [u16le; 2],
-        pub subsystem_version:          [u16le; 2],
-        pub win32_version:              u32le,
-        pub size_of_image:              u32le,
-        pub size_of_headers:            u32le,
-        pub checksum:                   u32le,
-        pub subsystem:                  u16le,
-        pub dll_characteristics:        u16le,
-        pub size_of_stack_reserve:      u32le,
-        pub size_of_stack_commit:       u32le,
-        pub size_of_heap_reserve:       u32le,
-        pub size_of_heap_commit:        u32le,
-        pub loader_flags:               u32le,
-        pub number_of_rva_and_sizes:    u32le,
-        pub data_directory:             DataDirectories,
-    }
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header32>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawOptionalHeader32 {
+    pub magic:                      u16le,
+    pub linker_version:             [u8le; 2],
+    pub size_of_code:               u32le,
+    pub size_of_initialized_data:   u32le,
+    pub size_of_uninitialized_data: u32le,
+    pub address_of_entry_point:     u32le,
+    pub base_of_code:               u32le,
+    pub base_of_data:               u32le,
+    pub image_base:                 u32le,
+    pub section_alignment:          u32le,
+    pub file_alignment:             u32le,
+    pub operating_system_version:   [u16le; 2],
+    pub image_version:              [u16le; 2],
+    pub subsystem_version:          [u16le; 2],
+    pub win32_version:              u32le,
+    pub size_of_image:              u32le,
+    pub size_of_headers:            u32le,
+    pub checksum:                   u32le,
+    pub subsystem:                  u16le,
+    pub dll_characteristics:        u16le,
+    pub size_of_stack_reserve:      u32le,
+    pub size_of_stack_commit:       u32le,
+    pub size_of_heap_reserve:       u32le,
+    pub size_of_heap_commit:        u32le,
+    pub loader_flags:               u32le,
+    pub number_of_rva_and_sizes:    u32le,
+    pub data_directory:             RawDataDirectories,
+}
 
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header64>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct OptionalHeader64 {
-        pub magic:                      u16le,
-        pub linker_version:             [u8le; 2],
-        pub size_of_code:               u32le,
-        pub size_of_initialized_data:   u32le,
-        pub size_of_uninitialized_data: u32le,
-        pub address_of_entry_point:     u32le,
-        pub base_of_code:               u32le,
-        // no base_of_data field
-        pub image_base:                 u64le, // 64!
-        pub section_alignment:          u32le,
-        pub file_alignment:             u32le,
-        pub operating_system_version:   [u16le; 2],
-        pub image_version:              [u16le; 2],
-        pub subsystem_version:          [u16le; 2],
-        pub win32_version:              u32le,
-        pub size_of_image:              u32le,
-        pub size_of_headers:            u32le,
-        pub checksum:                   u32le,
-        pub subsystem:                  u16le,
-        pub dll_characteristics:        u16le,
-        pub size_of_stack_reserve:      u64le, // 64!
-        pub size_of_stack_commit:       u64le, // 64!
-        pub size_of_heap_reserve:       u64le, // 64!
-        pub size_of_heap_commit:        u64le, // 64!
-        pub loader_flags:               u32le,
-        pub number_of_rva_and_sizes:    u32le,
-        pub data_directory:             DataDirectories,
-    }
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header64>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawOptionalHeader64 {
+    pub magic:                      u16le,
+    pub linker_version:             [u8le; 2],
+    pub size_of_code:               u32le,
+    pub size_of_initialized_data:   u32le,
+    pub size_of_uninitialized_data: u32le,
+    pub address_of_entry_point:     u32le,
+    pub base_of_code:               u32le,
+    // no base_of_data field
+    pub image_base:                 u64le, // 64!
+    pub section_alignment:          u32le,
+    pub file_alignment:             u32le,
+    pub operating_system_version:   [u16le; 2],
+    pub image_version:              [u16le; 2],
+    pub subsystem_version:          [u16le; 2],
+    pub win32_version:              u32le,
+    pub size_of_image:              u32le,
+    pub size_of_headers:            u32le,
+    pub checksum:                   u32le,
+    pub subsystem:                  u16le,
+    pub dll_characteristics:        u16le,
+    pub size_of_stack_reserve:      u64le, // 64!
+    pub size_of_stack_commit:       u64le, // 64!
+    pub size_of_heap_reserve:       u64le, // 64!
+    pub size_of_heap_commit:        u64le, // 64!
+    pub loader_flags:               u32le,
+    pub number_of_rva_and_sizes:    u32le,
+    pub data_directory:             RawDataDirectories,
+}
 
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct DataDirectories {
-        /// IMAGE_DIRECTORY_ENTRY_EXPORT
-        pub export:             DataDirectory,
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawDataDirectories {
+    /// IMAGE_DIRECTORY_ENTRY_EXPORT
+    pub export:             RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_IMPORT
-        pub import:             DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_IMPORT
+    pub import:             RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_RESOURCE
-        pub resource:           DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_RESOURCE
+    pub resource:           RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_EXCEPTION
-        pub exception:          DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_EXCEPTION
+    pub exception:          RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_SECURITY
-        /// Certificates related stuff
-        pub security:           DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_SECURITY
+    /// Certificates related stuff
+    pub security:           RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_BASERELOC
-        /// Base relocation table
-        pub basereloc:          DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_BASERELOC
+    /// Base relocation table
+    pub basereloc:          RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_DEBUG
-        pub debug:              DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_DEBUG
+    pub debug:              RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_ARCHITECTURE
-        /// Architecture-specific data
-        ///
-        /// IMAGE_DIRECTORY_ENTRY_COPYRIGHT (x86 usage)
-        pub architecture:       DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_ARCHITECTURE
+    /// Architecture-specific data
+    ///
+    /// IMAGE_DIRECTORY_ENTRY_COPYRIGHT (x86 usage)
+    pub architecture:       RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_GLOBALPTR
-        ///
-        /// Global pointer register relative virtual address
-        pub globalptr:          DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_GLOBALPTR
+    ///
+    /// Global pointer register relative virtual address
+    pub globalptr:          RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_TLS
-        /// Thread local storage (TLS)
-        pub tls:                DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_TLS
+    /// Thread local storage (TLS)
+    pub tls:                RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG
-        pub load_config:        DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG
+    pub load_config:        RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT
-        pub bound_imports:      DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT
+    pub bound_imports:      RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_IAT
-        pub iat:                DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_IAT
+    pub iat:                RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT
-        pub delay_import:       DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT
+    pub delay_import:       RawDataDirectory,
 
-        /// IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR
-        /// COM runtime descriptor / CLR header
-        pub com_descriptor:     DataDirectory,
+    /// IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR
+    /// COM runtime descriptor / CLR header
+    pub com_descriptor:     RawDataDirectory,
 
-        pub(super) _reserved:   DataDirectory,
-    }
+    pub(super) _reserved:   RawDataDirectory,
+}
 
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct DataDirectory {
-        pub virtual_address:            u32le,
-        pub size:                       u32le,
-    }
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawDataDirectory {
+    pub virtual_address:            u32le,
+    pub size:                       u32le,
+}
 
-    /// ## References
-    /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header>
-    #[repr(C)]
-    #[derive(Clone, Copy, Debug, Default)]
-    #[derive(Pod, Zeroable)]
-    pub(crate) struct SectionHeader {
-        pub name:                       abistr::CStrBuf<[u8; 8]>,
-        pub virtual_size:               u32le,
-        pub virtual_address:            u32le,
-        pub size_of_raw_data:           u32le,
-        pub pointer_to_raw_data:        u32le,
-        pub pointer_to_relocations:     u32le,
-        pub pointer_to_linenumbers:     u32le,
-        pub number_of_relocations:      u16le,
-        pub number_of_linenumbers:      u16le,
-        pub characteristics:            u32le,
-    }
+/// ## References
+/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header>
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+#[derive(Pod, Zeroable)]
+pub(crate) struct RawSectionHeader {
+    pub name:                       abistr::CStrBuf<[u8; 8]>,
+    pub virtual_size:               u32le,
+    pub virtual_address:            u32le,
+    pub size_of_raw_data:           u32le,
+    pub pointer_to_raw_data:        u32le,
+    pub pointer_to_relocations:     u32le,
+    pub pointer_to_linenumbers:     u32le,
+    pub number_of_relocations:      u16le,
+    pub number_of_linenumbers:      u16le,
+    pub characteristics:            u32le,
+}
 
-    #[test] fn layout() {
-        use std::mem::*;
+#[test] fn layout() {
+    use std::mem::*;
 
-        const IMAGE_NUMBEROF_DIRECTORY_ENTRIES : usize = 16;
-        assert_eq!(size_of::<DataDirectories>(), size_of::<[DataDirectory; IMAGE_NUMBEROF_DIRECTORY_ENTRIES]>());
-        assert_eq!(align_of::<DataDirectories>(), align_of::<[DataDirectory; IMAGE_NUMBEROF_DIRECTORY_ENTRIES]>());
-    }
+    const IMAGE_NUMBEROF_DIRECTORY_ENTRIES : usize = 16;
+    assert_eq!(size_of::<RawDataDirectories>(), size_of::<[RawDataDirectory; IMAGE_NUMBEROF_DIRECTORY_ENTRIES]>());
+    assert_eq!(align_of::<RawDataDirectories>(), align_of::<[RawDataDirectory; IMAGE_NUMBEROF_DIRECTORY_ENTRIES]>());
 }
