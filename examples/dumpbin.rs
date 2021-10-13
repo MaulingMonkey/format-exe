@@ -27,4 +27,13 @@ fn main() {
     });
 
     dbg!(mz_header);
+
+    exe.seek(SeekFrom::Start(mz_header.pe_header_start.into())).expect("unable to seek through executable file");
+
+    let pe_header = exe::pe::Header::read_from(&mut exe).unwrap_or_else(|err| {
+        eprintln!("error: unable to read pe::Header from `{}`: {}", exe_path.display(), err);
+        exit(1);
+    });
+
+    dbg!(pe_header);
 }
