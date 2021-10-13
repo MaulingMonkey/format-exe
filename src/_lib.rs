@@ -1,5 +1,5 @@
 pub mod mz;
-pub mod pe;
+#[path = "pe/_pe.rs"]               pub mod pe;
 
 mod letypes;                        use letypes::*;
 mod reserved;                       use reserved::*;
