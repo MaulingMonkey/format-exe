@@ -3,6 +3,7 @@
 //! ## References
 //! *   <https://wiki.osdev.org/PE>
 
+mod data_directories;               pub use data_directories::*;
 mod data_directory;                 pub use data_directory::*;
 mod file_header;                    pub use file_header::*;
 mod header;                         pub use header::*;
@@ -21,156 +22,6 @@ pub type Signature = abistr::CStrBuf<[u8; 4]>;
 
 
 /// ## References
-/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-pub struct DataDirectories {
-    /// IMAGE_DIRECTORY_ENTRY_EXPORT
-    pub export:             DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_IMPORT
-    pub import:             DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_RESOURCE
-    pub resource:           DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_EXCEPTION
-    pub exception:          DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_SECURITY
-    /// Certificates related stuff
-    pub security:           DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_BASERELOC
-    /// Base relocation table
-    pub basereloc:          DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_DEBUG
-    pub debug:              DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_ARCHITECTURE
-    /// Architecture-specific data
-    ///
-    /// IMAGE_DIRECTORY_ENTRY_COPYRIGHT (x86 usage)
-    pub architecture:       DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_GLOBALPTR
-    ///
-    /// Global pointer register relative virtual address
-    pub globalptr:          DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_TLS
-    /// Thread local storage (TLS)
-    pub tls:                DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG
-    pub load_config:        DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT
-    pub bound_imports:      DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_IAT
-    pub iat:                DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT
-    pub delay_import:       DataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR
-    /// COM runtime descriptor / CLR header
-    pub com_descriptor:     DataDirectory,
-
-    _reserved:              DataDirectory,
-}
-
-impl From<RawDataDirectories> for DataDirectories {
-    fn from(value: RawDataDirectories) -> Self {
-        Self {
-            export:                 value.export.into(),
-            import:                 value.import.into(),
-            resource:               value.resource.into(),
-            exception:              value.exception.into(),
-            security:               value.security.into(),
-            basereloc:              value.basereloc.into(),
-            debug:                  value.debug.into(),
-            architecture:           value.architecture.into(),
-            globalptr:              value.globalptr.into(),
-            tls:                    value.tls.into(),
-            load_config:            value.load_config.into(),
-            bound_imports:          value.bound_imports.into(),
-            iat:                    value.iat.into(),
-            delay_import:           value.delay_import.into(),
-            com_descriptor:         value.com_descriptor.into(),
-            _reserved:              value._reserved.into(),
-        }
-    }
-}
-
-
-
-/// ## References
-/// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
-#[repr(C)]
-#[derive(Clone, Copy, Debug, Default)]
-#[derive(Pod, Zeroable)]
-pub(crate) struct RawDataDirectories {
-    /// IMAGE_DIRECTORY_ENTRY_EXPORT
-    pub export:             RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_IMPORT
-    pub import:             RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_RESOURCE
-    pub resource:           RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_EXCEPTION
-    pub exception:          RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_SECURITY
-    /// Certificates related stuff
-    pub security:           RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_BASERELOC
-    /// Base relocation table
-    pub basereloc:          RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_DEBUG
-    pub debug:              RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_ARCHITECTURE
-    /// Architecture-specific data
-    ///
-    /// IMAGE_DIRECTORY_ENTRY_COPYRIGHT (x86 usage)
-    pub architecture:       RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_GLOBALPTR
-    ///
-    /// Global pointer register relative virtual address
-    pub globalptr:          RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_TLS
-    /// Thread local storage (TLS)
-    pub tls:                RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG
-    pub load_config:        RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT
-    pub bound_imports:      RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_IAT
-    pub iat:                RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT
-    pub delay_import:       RawDataDirectory,
-
-    /// IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR
-    /// COM runtime descriptor / CLR header
-    pub com_descriptor:     RawDataDirectory,
-
-    pub(super) _reserved:   RawDataDirectory,
-}
-
-/// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header>
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
@@ -186,12 +37,4 @@ pub(crate) struct RawSectionHeader {
     pub number_of_relocations:      u16le,
     pub number_of_linenumbers:      u16le,
     pub characteristics:            u32le,
-}
-
-#[test] fn layout() {
-    use std::mem::*;
-
-    const IMAGE_NUMBEROF_DIRECTORY_ENTRIES : usize = 16;
-    assert_eq!(size_of::<RawDataDirectories>(), size_of::<[RawDataDirectory; IMAGE_NUMBEROF_DIRECTORY_ENTRIES]>());
-    assert_eq!(align_of::<RawDataDirectories>(), align_of::<[RawDataDirectory; IMAGE_NUMBEROF_DIRECTORY_ENTRIES]>());
 }
