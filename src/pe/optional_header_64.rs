@@ -28,7 +28,7 @@ pub struct OptionalHeader64 {
     pub size_of_image:              u32,
     pub size_of_headers:            u32,
     pub checksum:                   u32,
-    pub subsystem:                  u16,
+    pub subsystem:                  Subsystem,
     pub dll_characteristics:        u16,
     pub size_of_stack_reserve:      u64, // 64!
     pub size_of_stack_commit:       u64, // 64!
@@ -97,7 +97,7 @@ pub(crate) struct RawOptionalHeader64 {
     pub size_of_image:              u32le,
     pub size_of_headers:            u32le,
     pub checksum:                   u32le,
-    pub subsystem:                  u16le,
+    pub subsystem:                  Subsystem,
     pub dll_characteristics:        u16le,
     pub size_of_stack_reserve:      u64le, // 64!
     pub size_of_stack_commit:       u64le, // 64!
