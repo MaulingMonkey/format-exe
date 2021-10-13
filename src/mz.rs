@@ -1,4 +1,4 @@
-//! The MS-DOS EXE format, also known as MZ after its signature (the initials of Microsoft engineer Mark Zbykowski)
+//! The MS-DOS EXE format, also known as MZ after its signature (the initials of Microsoft engineer **M**ark **Z**bykowski)
 //!
 //! ## References
 //! *   <https://wiki.osdev.org/MZ>
