@@ -11,3 +11,9 @@ license             = "MIT OR Apache-2.0"
 
 [lib]
 path                = "src/_lib.rs"
+
+[dependencies]
+abistr.version      = "0.1"
+abistr.features     = ["bytemuck"]
+bytemuck.version    = "1"
+bytemuck.features   = ["derive"]

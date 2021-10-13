@@ -1,3 +1,7 @@
+extern crate maulingmonkey_format_exe as exe;
+
+use std::fs::File;
+use std::io::*;
 use std::path::*;
 use std::process::exit;
 
@@ -11,4 +15,16 @@ fn main() {
         eprintln!("error: `{}` does not exist", exe_path.display());
         exit(1);
     }
+
+    let mut exe = BufReader::new(File::open(&exe_path).unwrap_or_else(|err| {
+        eprintln!("error: unable to open `{}`: {}", exe_path.display(), err);
+        exit(1);
+    }));
+
+    let mz_header = exe::mz::Header::read_from(&mut exe).unwrap_or_else(|err| {
+        eprintln!("error: unable to read mz::Header from `{}`: {}", exe_path.display(), err);
+        exit(1);
+    });
+
+    dbg!(mz_header);
 }
