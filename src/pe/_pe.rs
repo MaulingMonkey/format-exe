@@ -353,9 +353,9 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct Header {
+    pub(crate) struct Header {
         pub signature:                  Signature,
-        pub file_header:                FileHeader,
+        pub file_header:                RawFileHeader,
     }
 
     /// ## References
@@ -363,9 +363,9 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct NtHeaders32 {
+    pub(crate) struct NtHeaders32 {
         pub signature:                  Signature,
-        pub file_header:                FileHeader,
+        pub file_header:                RawFileHeader,
         pub optional_header:            OptionalHeader32,
     }
 
@@ -374,9 +374,9 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct NtHeaders64 {
+    pub(crate) struct NtHeaders64 {
         pub signature:                  Signature,
-        pub file_header:                FileHeader,
+        pub file_header:                RawFileHeader,
         pub optional_header:            OptionalHeader64,
     }
 
@@ -386,7 +386,7 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct OptionalHeader32 {
+    pub(crate) struct OptionalHeader32 {
         pub magic:                      u16le,
         pub linker_version:             [u8le; 2],
         pub size_of_code:               u32le,
@@ -421,7 +421,7 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct OptionalHeader64 {
+    pub(crate) struct OptionalHeader64 {
         pub magic:                      u16le,
         pub linker_version:             [u8le; 2],
         pub size_of_code:               u32le,
@@ -456,7 +456,7 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct DataDirectories {
+    pub(crate) struct DataDirectories {
         /// IMAGE_DIRECTORY_ENTRY_EXPORT
         pub export:             DataDirectory,
 
@@ -519,7 +519,7 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct DataDirectory {
+    pub(crate) struct DataDirectory {
         pub virtual_address:            u32le,
         pub size:                       u32le,
     }
@@ -529,7 +529,7 @@ mod raw {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     #[derive(Pod, Zeroable)]
-    pub struct SectionHeader {
+    pub(crate) struct SectionHeader {
         pub name:                       abistr::CStrBuf<[u8; 8]>,
         pub virtual_size:               u32le,
         pub virtual_address:            u32le,
