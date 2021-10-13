@@ -14,6 +14,10 @@ macro_rules! letypes {
             pub struct $le($inner);
 
             impl $le {
+                pub const fn new(value: $inner) -> Self {
+                    $le($inner::from_le(value))
+                }
+
                 pub fn to_le(self) -> $inner {
                     self.0.to_le()
                 }
