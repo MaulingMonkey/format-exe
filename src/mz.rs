@@ -225,7 +225,7 @@ mod raw {
         pub fn read_from(read: &mut impl Read) -> io::Result<Self> {
             let mut s = Self::default();
             read.read_exact(bytemuck::bytes_of_mut(&mut s))?;
-            if s.signature.to_bytes() != b"MZ" {
+            if s.signature.buffer() != b"MZ" {
                 Err(io::Error::new(io::ErrorKind::InvalidData, "mz::Header::signature != \"MZ\""))
             } else {
                 Ok(s)
