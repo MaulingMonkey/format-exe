@@ -12,6 +12,7 @@ mod optional_header_32;             pub use optional_header_32::*;
 mod optional_header_64;             pub use optional_header_64::*;
 mod optional_header;                pub use optional_header::*;
 mod section_header;                 pub use section_header::*;
+mod time_date;                      pub use time_date::*;
 mod version;                        pub use version::*;
 
 type Signature = abistr::CStrBuf<[u8; 4]>;

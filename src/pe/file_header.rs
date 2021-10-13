@@ -12,7 +12,7 @@ use bytemuck::*;
 pub struct FileHeader {
     pub machine:                    Machine,
     pub nsections:                  u16,
-    pub time_date_stamp:            u32,
+    pub link_time_date:             TimeDate,
     pub symbols:                    u32,
     pub nsymbols:                   u32,
     pub optional_header_size:       u16,
@@ -24,7 +24,7 @@ impl From<RawFileHeader> for FileHeader {
         Self {
             machine:                value.machine,
             nsections:              value.nsections.into(),
-            time_date_stamp:        value.time_date_stamp.into(),
+            link_time_date:         value.link_time_date,
             symbols:                value.symbols.into(),
             nsymbols:               value.nsymbols.into(),
             optional_header_size:   value.optional_header_size.into(),
@@ -41,7 +41,7 @@ impl From<RawFileHeader> for FileHeader {
 pub(crate) struct RawFileHeader {
     pub machine:                    Machine,
     pub nsections:                  u16le,
-    pub time_date_stamp:            u32le,
+    pub link_time_date:             TimeDate,
     pub symbols:                    u32le,
     pub nsymbols:                   u32le,
     pub optional_header_size:       u16le,
