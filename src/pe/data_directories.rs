@@ -64,6 +64,28 @@ pub struct DataDirectories {
     _reserved:              DataDirectory,
 }
 
+impl DataDirectories {
+    pub fn iter_name_dd<'a>(&'a self) -> impl Iterator<Item = (&'static str, &'a DataDirectory)> {
+        std::array::IntoIter::new([
+            ("export",          &self.export            ),
+            ("import",          &self.import            ),
+            ("resource",        &self.resource          ),
+            ("exception",       &self.exception         ),
+            ("security",        &self.security          ),
+            ("basereloc",       &self.basereloc         ),
+            ("debug",           &self.debug             ),
+            ("architecture",    &self.architecture      ),
+            ("globalptr",       &self.globalptr         ),
+            ("tls",             &self.tls               ),
+            ("load_config",     &self.load_config       ),
+            ("bound_imports",   &self.bound_imports     ),
+            ("iat",             &self.iat               ),
+            ("delay_import",    &self.delay_import      ),
+            ("com_descriptor",  &self.com_descriptor    ),
+        ])
+    }
+}
+
 impl From<RawDataDirectories> for DataDirectories {
     fn from(value: RawDataDirectories) -> Self {
         let [
