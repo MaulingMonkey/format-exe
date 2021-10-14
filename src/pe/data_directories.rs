@@ -84,6 +84,25 @@ impl DataDirectories {
             ("com_descriptor",  &self.com_descriptor    ),
         ])
     }
+
+    pub const EMPTY : DataDirectories = DataDirectories {
+        export:         DataDirectory::EMPTY,
+        import:         DataDirectory::EMPTY,
+        resource:       DataDirectory::EMPTY,
+        exception:      DataDirectory::EMPTY,
+        security:       DataDirectory::EMPTY,
+        basereloc:      DataDirectory::EMPTY,
+        debug:          DataDirectory::EMPTY,
+        architecture:   DataDirectory::EMPTY,
+        globalptr:      DataDirectory::EMPTY,
+        tls:            DataDirectory::EMPTY,
+        load_config:    DataDirectory::EMPTY,
+        bound_imports:  DataDirectory::EMPTY,
+        iat:            DataDirectory::EMPTY,
+        delay_import:   DataDirectory::EMPTY,
+        com_descriptor: DataDirectory::EMPTY,
+        _reserved:      DataDirectory::EMPTY,
+    };
 }
 
 impl From<RawDataDirectories> for DataDirectories {

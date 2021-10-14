@@ -15,6 +15,10 @@ pub struct DataDirectory {
     pub size:                       u32,
 }
 
+impl DataDirectory {
+    pub const EMPTY : DataDirectory = DataDirectory { virtual_address: 0, size: 0 };
+}
+
 impl From<RawDataDirectory> for DataDirectory {
     fn from(value: RawDataDirectory) -> Self {
         Self {
@@ -26,8 +30,8 @@ impl From<RawDataDirectory> for DataDirectory {
 
 impl Debug for DataDirectory {
     fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
-        if *self == DataDirectory::default() {
-            write!(fmt, "DataDirectory::default()")
+        if *self == DataDirectory::EMPTY {
+            write!(fmt, "DataDirectory::EMPTY")
         } else {
             write!(fmt, "DataDirectory {{ virtual_address: 0x{:08x}, size: {} }}", self.virtual_address, self.size)
         }
