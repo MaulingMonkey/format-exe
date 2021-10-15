@@ -41,8 +41,7 @@ impl<R: Read + Seek> Reader<R> {
         if let Some(sh) = self.pe_section_headers_cache.get(usize::from(idx)) {
             Ok(*sh)
         } else {
-            let sh_offset = self.pe_section_headers_start + (size_of::<pe::SectionHeader>() as u64) * u64::from(idx);
-            self.src.anno(self.reader.seek(SeekFrom::Start(sh_offset)), "error seeking to pe::SectionHeader")?;
+            self.seek_to(self.pe_section_headers_start, (size_of::<pe::SectionHeader>() as u64) * u64::from(idx), "error seeking to pe::SectionHeader")?;
             self.src.anno(pe::SectionHeader::read_from(&mut self.reader), "error reading pe::SectionHeader")
         }
     }
@@ -56,7 +55,7 @@ impl<R: Read + Seek> Reader<R> {
         let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into()));
         let mut data = vec![0u8; usize::try_from(header.size_of_raw_data).expect("unable to allocate pe::SectionHeader::size_of_raw_data bytes")];
         if !data.is_empty() {
-            self.src.anno(self.reader.seek(SeekFrom::Start(self.exe_start + ptr)), "error seeking to PE section")?;
+            self.seek_to(self.exe_start, ptr, "error seeking to PE section")?;
             self.src.anno(self.reader.read_exact(&mut data[..]), "error reading PE section")?;
         }
         Ok(data)
@@ -88,6 +87,10 @@ impl<R: Read + Seek> Reader<R> {
             pe_section_headers_start,
             pe_section_headers_cache,
         })
+    }
+
+    fn seek_to(&mut self, start: u64, offset: impl Into<u64>, anno: &str) -> io::Result<u64> {
+        self.src.anno(self.reader.seek(SeekFrom::Start(start + offset.into())), anno)
     }
 }
 
