@@ -10,7 +10,7 @@ fn main() {
     let exe_path    = args.next().unwrap_or(self_path);
     let exe_path    = PathBuf::from(exe_path);
 
-    let mut exe = exe::pe::Reader::open(exe_path).unwrap();
+    let exe = exe::pe::Reader::open(exe_path).unwrap();
 
     let ptr_size : u8 = match &exe.pe_header().optional_header {
         None => 0,
