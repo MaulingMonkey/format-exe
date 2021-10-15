@@ -5,6 +5,7 @@ use std::fmt::{self, *};
 use std::fs::File;
 use std::io::{self, *};
 use std::mem::*;
+use std::ops::*;
 use std::path::PathBuf;
 
 
@@ -52,17 +53,43 @@ impl<R: Read + Seek> Reader<R> {
     }
 
     pub fn read_pe_section_data(&mut self, header: &pe::SectionHeader) -> io::Result<Vec<u8>> {
-        let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into()));
         let mut data = vec![0u8; usize::try_from(header.size_of_raw_data).expect("unable to allocate pe::SectionHeader::size_of_raw_data bytes")];
-        if !data.is_empty() {
-            self.seek_to(self.exe_start, ptr, "error seeking to PE section")?;
-            self.src.anno(self.reader.read_exact(&mut data[..]), "error reading PE section")?;
-        }
+        self.read_pe_section_data_inplace(header, 0, &mut data)?;
         Ok(data)
+    }
+
+    pub fn read_pe_section_data_inplace<'a>(&'_ mut self, header: &'_ pe::SectionHeader, offset: u32, data: &'a mut [u8]) -> io::Result<&'a [u8]> {
+        let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into())) + u64::from(offset);
+        let n = usize::try_from(header.size_of_raw_data.saturating_sub(offset)).unwrap_or(!0).min(data.len());
+        if n > 0 {
+            self.seek_to(self.exe_start, ptr, "error seeking to PE section")?;
+            self.src.anno(self.reader.read_exact(&mut data[..n]), "error reading PE section")?;
+        }
+        Ok(&data[..n])
     }
 
     pub fn read_pe_section_headers(&mut self) -> io::Result<Vec<pe::SectionHeader>> {
         (0 .. self.pe_header.file_header.nsections).map(|i| self.read_pe_section_header(i)).collect()
+    }
+
+    pub fn read_exact_rva<'a>(&'_ mut self, rva: Range<u32>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
+        let size = (rva.end - rva.start) as usize;
+        if scratch.len() < size { scratch.resize(size, 0u8); }
+
+        let mut rva = rva.start;
+        let mut o = &mut scratch[..size];
+        while !o.is_empty() {
+            for i in 0 .. self.pe_header.file_header.nsections {
+                let section = self.read_pe_section_header(i)?;
+                if section.virtual_address_range().contains(&rva) {
+                    let n = self.read_pe_section_data_inplace(&section, rva - section.virtual_address, o)?.len();
+                    rva += n as u32;
+                    o = &mut o[n..];
+                }
+            }
+        }
+
+        Ok(&scratch[..size])
     }
 
     fn read_src(mut reader: R, src: Src) -> io::Result<Self> {

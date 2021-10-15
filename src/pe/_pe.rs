@@ -9,6 +9,7 @@ mod dll_characteristics;            pub use dll_characteristics::*;
 mod file_characteristics;           pub use file_characteristics::*;
 mod file_header;                    pub use file_header::*;
 mod header;                         pub use header::*;
+mod import_descriptor;              pub use import_descriptor::*;
 mod machine;                        pub use machine::*;
 mod optional_header_32;             pub use optional_header_32::*;
 mod optional_header_64;             pub use optional_header_64::*;
