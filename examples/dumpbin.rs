@@ -20,9 +20,8 @@ fn main() {
 
     dbg!(exe.mz_header());
     dbg!(exe.pe_header());
-    let sections = exe.read_pe_section_headers().unwrap();
 
-    for (i, section) in sections.iter().enumerate() {
+    for (i, section) in exe.pe_section_headers().iter().enumerate() {
         eprintln!("sections[{}].name                = {:?}", i, section.name);
         eprintln!("sections[{}].characteristics     = {:?}", i, section.characteristics);
         eprintln!("sections[{}].virtual_address     = 0x{:08x} .. 0x{:08x}", i, section.virtual_address, section.virtual_address + section.virtual_size);
@@ -61,7 +60,7 @@ fn main() {
         if *dd == pe::DataDirectory::default() { continue }
 
         eprintln!("data_directory.{: <16} = {:?}", name, dd);
-        if let Some(section) = sections.iter().find(|s| s.virtual_address_range().contains(&dd.virtual_address)) {
+        if let Some(section) = exe.pe_section_headers().iter().find(|s| s.virtual_address_range().contains(&dd.virtual_address)) {
             eprintln!("    section.name = {:?}", section.name);
         }
         match i {

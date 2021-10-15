@@ -1,26 +1,22 @@
 use crate::*;
 
+use std::cell::RefCell;
 use std::convert::*;
 use std::fmt::{self, *};
 use std::fs::File;
 use std::io::{self, *};
-use std::mem::*;
 use std::ops::*;
 use std::path::PathBuf;
 
 
 
-#[cfg(    debug_assertions )] const FIXED_SECTION_HEADERS : usize = 1;
-#[cfg(not(debug_assertions))] const FIXED_SECTION_HEADERS : usize = 32;
-
 pub struct Reader<R> {
     src:                        Src,
-    reader:                     R,
+    reader:                     RefCell<R>,
     exe_start:                  u64,
     mz_header:                  mz::Header,
     pe_header:                  pe::Header,
-    pe_section_headers_start:   u64,
-    pe_section_headers_cache:   [pe::SectionHeader; FIXED_SECTION_HEADERS],
+    pe_section_headers:         Vec<pe::SectionHeader>,
 }
 
 impl Reader<io::BufReader<File>> {
@@ -35,57 +31,51 @@ impl Reader<io::BufReader<File>> {
 impl<R: Read + Seek> Reader<R> {
     pub fn read(reader: R) -> io::Result<Self> { Self::read_src(reader, Src::Unknown) }
 
-    pub fn read_pe_section_header<I>(&mut self, idx: I) -> io::Result<pe::SectionHeader> where I : TryInto<u16>, I::Error : Debug {
-        let idx = idx.try_into().expect("pe::Reader::pe_section_header: idx out of bounds");
-        assert!(idx < self.pe_header.file_header.nsections, "pe::Reader::pe_section_header: idx out of bounds");
-
-        if let Some(sh) = self.pe_section_headers_cache.get(usize::from(idx)) {
-            Ok(*sh)
-        } else {
-            self.seek_to(self.pe_section_headers_start, (size_of::<pe::SectionHeader>() as u64) * u64::from(idx), "error seeking to pe::SectionHeader")?;
-            self.src.anno(pe::SectionHeader::read_from(&mut self.reader), "error reading pe::SectionHeader")
-        }
+    pub fn get_pe_section_header(&self, idx: impl TryInto<u16>) -> Option<&pe::SectionHeader> {
+        let idx = idx.try_into().ok()?;
+        self.pe_section_headers.get(usize::from(idx))
     }
 
-    pub fn read_pe_section_data_by_idx<I>(&mut self, idx: I) -> io::Result<Vec<u8>> where I : TryInto<u16>, I::Error : Debug {
-        let header = self.read_pe_section_header(idx)?;
+    pub fn pe_section_header(&self, idx: impl TryInto<u16>) -> &pe::SectionHeader {
+        self.get_pe_section_header(idx).expect("pe::Reader::pe_section_header(idx): idx out of bounds")
+    }
+
+    pub fn read_pe_section_data_by_idx<I>(&self, idx: I) -> io::Result<Vec<u8>> where I : TryInto<u16> {
+        let header = *self.pe_section_header(idx);
         self.read_pe_section_data(&header)
     }
 
-    pub fn read_pe_section_data(&mut self, header: &pe::SectionHeader) -> io::Result<Vec<u8>> {
+    pub fn read_pe_section_data(&self, header: &pe::SectionHeader) -> io::Result<Vec<u8>> {
         let mut data = vec![0u8; usize::try_from(header.size_of_raw_data).expect("unable to allocate pe::SectionHeader::size_of_raw_data bytes")];
         self.read_pe_section_data_inplace(header, 0, &mut data)?;
         Ok(data)
     }
 
-    pub fn read_pe_section_data_inplace<'a>(&'_ mut self, header: &'_ pe::SectionHeader, offset: u32, data: &'a mut [u8]) -> io::Result<&'a [u8]> {
+    pub fn read_pe_section_data_inplace<'a>(&'_ self, header: &'_ pe::SectionHeader, offset: u32, data: &'a mut [u8]) -> io::Result<&'a [u8]> {
         let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into())) + u64::from(offset);
         let n = usize::try_from(header.size_of_raw_data.saturating_sub(offset)).unwrap_or(!0).min(data.len());
         if n > 0 {
             self.seek_to(self.exe_start, ptr, "error seeking to PE section")?;
-            self.src.anno(self.reader.read_exact(&mut data[..n]), "error reading PE section")?;
+            self.src.anno(self.reader.borrow_mut().read_exact(&mut data[..n]), "error reading PE section")?;
         }
         Ok(&data[..n])
     }
 
-    pub fn read_pe_section_headers(&mut self) -> io::Result<Vec<pe::SectionHeader>> {
-        (0 .. self.pe_header.file_header.nsections).map(|i| self.read_pe_section_header(i)).collect()
-    }
+    pub fn pe_section_headers(&self) -> &[pe::SectionHeader] { &self.pe_section_headers[..] }
 
-    pub fn read_exact_rva<'a>(&'_ mut self, rva: Range<u32>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
+    pub fn read_exact_rva<'a>(&'_ self, rva: Range<u32>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
         let size = (rva.end - rva.start) as usize;
         if scratch.len() < size { scratch.resize(size, 0u8); }
 
         let mut rva = rva.start;
         let mut o = &mut scratch[..size];
         while !o.is_empty() {
-            for i in 0 .. self.pe_header.file_header.nsections {
-                let section = self.read_pe_section_header(i)?;
-                if section.virtual_address_range().contains(&rva) {
-                    let n = self.read_pe_section_data_inplace(&section, rva - section.virtual_address, o)?.len();
-                    rva += n as u32;
-                    o = &mut o[n..];
-                }
+            if let Some(section) = self.pe_section_headers.iter().find(|s| s.virtual_address_range().contains(&rva)).copied() {
+                let n = self.read_pe_section_data_inplace(&section, rva - section.virtual_address, o)?.len();
+                rva += n as u32;
+                o = &mut o[n..];
+            } else {
+                return Err(io::Error::new(io::ErrorKind::InvalidInput, "not all RVA mapped")); // XXX
             }
         }
 
@@ -98,12 +88,12 @@ impl<R: Read + Seek> Reader<R> {
         src.anno(reader.seek(SeekFrom::Start(mz_header.pe_header_start.into())), "error seeking to pe::Header")?;
         let pe_header = src.anno(pe::Header::read_from(&mut reader), "error reading pe::Header")?;
 
-        let pe_section_headers_start = src.anno(reader.stream_position(), "error reading stream position for pe::SectionHeader[0]")?;
-        let mut pe_section_headers_cache = [pe::SectionHeader::default(); FIXED_SECTION_HEADERS];
-        let sections = &mut pe_section_headers_cache[..FIXED_SECTION_HEADERS.min(pe_header.file_header.nsections.into())];
-        for section in sections {
+        let mut pe_section_headers = vec![pe::SectionHeader::default(); pe_header.file_header.nsections.into()];
+        for section in &mut pe_section_headers {
             *section = src.anno(pe::SectionHeader::read_from(&mut reader), "error reading pe::SectionHeader")?;
         }
+
+        let reader = RefCell::new(reader);
 
         Ok(Self {
             src,
@@ -111,13 +101,12 @@ impl<R: Read + Seek> Reader<R> {
             exe_start,
             mz_header,
             pe_header,
-            pe_section_headers_start,
-            pe_section_headers_cache,
+            pe_section_headers,
         })
     }
 
-    fn seek_to(&mut self, start: u64, offset: impl Into<u64>, anno: &str) -> io::Result<u64> {
-        self.src.anno(self.reader.seek(SeekFrom::Start(start + offset.into())), anno)
+    fn seek_to(&self, start: u64, offset: impl Into<u64>, anno: &str) -> io::Result<u64> {
+        self.src.anno(self.reader.borrow_mut().seek(SeekFrom::Start(start + offset.into())), anno)
     }
 }
 
