@@ -23,7 +23,7 @@ fn main() {
         match section.pointer_to_raw_data {
             None => eprintln!("sections[{}].data                = None", i),
             Some(_) => {
-                let data = exe.read_pe_section_data(i).unwrap();
+                let data = exe.read_pe_section_data(section).unwrap();
                 //if section.name.to_bytes() == b".data" {
                 if false {
                     eprintln!("sections[{}].data                = Some([", i);

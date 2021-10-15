@@ -47,8 +47,12 @@ impl<R: Read + Seek> Reader<R> {
         }
     }
 
-    pub fn read_pe_section_data<I>(&mut self, idx: I) -> io::Result<Vec<u8>> where I : TryInto<u16>, I::Error : Debug {
+    pub fn read_pe_section_data_by_idx<I>(&mut self, idx: I) -> io::Result<Vec<u8>> where I : TryInto<u16>, I::Error : Debug {
         let header = self.read_pe_section_header(idx)?;
+        self.read_pe_section_data(&header)
+    }
+
+    pub fn read_pe_section_data(&mut self, header: &pe::SectionHeader) -> io::Result<Vec<u8>> {
         let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into()));
         let mut data = vec![0u8; usize::try_from(header.size_of_raw_data).expect("unable to allocate pe::SectionHeader::size_of_raw_data bytes")];
         if !data.is_empty() {
