@@ -1,6 +1,8 @@
+use crate::*;
+
 use bytemuck::*;
 
-use std::fmt::{self, *};
+use std::fmt::{self, Debug, Display, Formatter};
 
 
 
@@ -34,3 +36,14 @@ impl<C: Display> Display for MajorMinorVersion<C> {
 
 unsafe impl<C: Pod     > Pod      for MajorMinorVersion<C> {}
 unsafe impl<C: Zeroable> Zeroable for MajorMinorVersion<C> {}
+
+impl<C: FromMemory> FromMemory for MajorMinorVersion<C> {
+    type Raw    = [<C as FromMemory>::Raw; 2];
+    type Error  = <C as FromMemory>::Error;
+    fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> {
+        let [major, minor] = raw;
+        let major = C::from_raw(major)?;
+        let minor = C::from_raw(minor)?;
+        Ok(Self { major, minor })
+    }
+}

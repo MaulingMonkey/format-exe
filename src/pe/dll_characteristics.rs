@@ -1,4 +1,4 @@
-bitflags::bitflags! {
+from_memory_flags! {
     /// IMAGE_DLLCHARACTERISTICS_\*
     ///
     /// ## References
@@ -27,11 +27,5 @@ bitflags::bitflags! {
         const WDM_DRIVER                            = 0x2000;
         const GUARD_CF                              = 0x4000;
         const TERMINAL_SERVER_AWARE                 = 0x8000;
-    }
-}
-
-impl Default for DllCharacteristics {
-    fn default() -> Self {
-        Self::empty()
     }
 }

@@ -8,6 +8,7 @@ use std::mem::{size_of, size_of_val};
 
 
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Header {
     pub signature:          Signature,
@@ -28,7 +29,7 @@ impl Header {
         if signature.buffer() != b"PE\0\0" {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "pe::Header::signature != \"PE\\0\\0\""));
         }
-        let file_header = FileHeader::from(file_header);
+        let file_header = FileHeader::from_raw(file_header)?;
 
         match file_header.optional_header_size {
             0 => return Ok(Self { signature, file_header, optional_header: None }),
@@ -45,8 +46,9 @@ impl Header {
 
                 match magic {
                     IMAGE_NT_OPTIONAL_HDR32_MAGIC => {
-                        let mut o = RawOptionalHeader32 { magic, .. Default::default() };
-                        let required = size_of_val(&o) - size_of::<RawDataDirectories>();
+                        type Raw = <OptionalHeader32 as FromMemory>::Raw;
+                        let mut o = Raw { magic, .. Default::default() };
+                        let required = size_of_val(&o) - size_of::<DataDirectories>();
                         if optional_header_size < required {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!(
                                 "pe::FileHeader::optional_header_size ({}) < required size for pe::OptionalHeader32 ({})",
@@ -54,11 +56,13 @@ impl Header {
                             )));
                         }
                         read.read_exact(&mut bytes_of_mut(&mut o)[2..])?;
-                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader32(o.into())) })
+                        let h = <OptionalHeader32 as FromMemory>::from_raw(o)?;
+                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader32(h)) })
                     },
                     IMAGE_NT_OPTIONAL_HDR64_MAGIC => {
-                        let mut o = RawOptionalHeader64 { magic, .. Default::default() };
-                        let required = size_of_val(&o) - size_of::<RawDataDirectories>();
+                        type Raw = <OptionalHeader64 as FromMemory>::Raw;
+                        let mut o = Raw { magic, .. Default::default() };
+                        let required = size_of_val(&o) - size_of::<DataDirectories>();
                         if optional_header_size < required {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!(
                                 "pe::FileHeader::optional_header_size ({}) < required size for pe::OptionalHeader64 ({})",
@@ -66,7 +70,8 @@ impl Header {
                             )));
                         }
                         read.read_exact(&mut bytes_of_mut(&mut o)[2..])?;
-                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader64(o.into())) })
+                        let h = <OptionalHeader64 as FromMemory>::from_raw(o)?;
+                        Ok(Self { signature, file_header, optional_header: Some(OptionalHeader::OptionalHeader64(h)) })
                     },
                     IMAGE_ROM_OPTIONAL_HDR_MAGIC => {
                         Err(io::Error::new(io::ErrorKind::InvalidData, "pe::OptionalHeader::magic == IMAGE_ROM_OPTIONAL_HDR_MAGIC (unsupported value)"))
@@ -89,5 +94,5 @@ impl Header {
 #[derive(Pod, Zeroable)]
 struct RawHeader {
     pub signature:                  Signature,
-    pub file_header:                RawFileHeader,
+    pub file_header:                <FileHeader as FromMemory>::Raw,
 }

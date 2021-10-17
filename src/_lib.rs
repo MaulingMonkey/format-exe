@@ -1,3 +1,5 @@
+#[macro_use] #[path = "macros/_macros.rs"] mod macros;
+
 pub mod mz;
 #[path = "pe/_pe.rs"]               pub mod pe;
 

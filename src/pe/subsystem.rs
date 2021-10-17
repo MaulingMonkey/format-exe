@@ -2,7 +2,7 @@ use crate::*;
 
 use bytemuck::*;
 
-use std::fmt::{self, *};
+use std::fmt::{self, Debug, Formatter};
 
 
 
@@ -60,4 +60,10 @@ impl Debug for Subsystem {
             other                           => write!(fmt, "Subsystem(0x{:04x})", other.0.to_le()),
         }
     }
+}
+
+impl FromMemory for Subsystem {
+    type Raw    = Self;
+    type Error  = std::io::Error;
+    fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(raw) }
 }

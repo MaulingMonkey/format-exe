@@ -1,6 +1,8 @@
+use crate::*;
+
 use bytemuck::*;
 
-use std::fmt::{self, *};
+use std::fmt::{self, Debug, Formatter};
 
 
 
@@ -21,4 +23,10 @@ impl<const N: usize> Debug for Reserved<N> {
     fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
         write!(fmt, "[...]")
     }
+}
+
+impl<const N: usize> FromMemory for Reserved<N> {
+    type Raw    = Self;
+    type Error  = std::io::Error;
+    fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(raw) }
 }

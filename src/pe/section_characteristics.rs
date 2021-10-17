@@ -1,4 +1,4 @@
-bitflags::bitflags! {
+from_memory_flags! {
     /// IMAGE_SCN_\*
     ///
     /// ## References
@@ -61,11 +61,5 @@ bitflags::bitflags! {
         const MEM_WRITE                             = 0x80000000;
 
         const SCALE_INDEX                           = 0x00000001;
-    }
-}
-
-impl Default for SectionCharacteristics {
-    fn default() -> Self {
-        Self::empty()
     }
 }

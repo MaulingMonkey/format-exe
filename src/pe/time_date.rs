@@ -2,7 +2,7 @@ use crate::*;
 
 use bytemuck::*;
 
-use std::fmt::{self, *};
+use std::fmt::{self, Debug, Formatter};
 use std::time::{Duration, SystemTime};
 
 
@@ -28,4 +28,10 @@ impl Debug for TimeDate {
         // TODO: better repr
         write!(fmt, "TimeDate({})", self.0)
     }
+}
+
+impl FromMemory for TimeDate {
+    type Raw    = Self;
+    type Error  = std::io::Error;
+    fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(raw) }
 }

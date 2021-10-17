@@ -1,13 +1,18 @@
+use crate::*;
+
+use abistr::CStrBuf;
 use bytemuck::*;
 
 use std::convert::*;
+use std::num::*;
 use std::io;
 
 
 
+#[doc(hidden)]
 pub trait FromMemory : Sized {
-    type Raw : Default + Zeroable + Pod;
-    type Error : Into<io::Error> + From<EofError>;
+    type Raw    : Default + Zeroable + Pod;
+    type Error  : Into<io::Error> + From<EofError>;
 
     fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error>;
 
@@ -42,19 +47,64 @@ impl From<EofError> for io::Error {
 
 
 
-macro_rules! from_memory_integer {
-    ( $($integer:ident),* ) => {
-        $(
-            impl FromMemory for $integer {
-                type Raw    = [u8; std::mem::size_of::<$integer>()];
-                type Error  = std::io::Error;
+impl FromMemory for () {
+    type Raw    = [u8; 0];
+    type Error  = std::io::Error;
+    fn from_raw(_: Self::Raw) -> Result<(), Self::Error> { Ok(()) }
+}
 
-                fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> {
-                    Ok(Self::from_le_bytes(raw))
-                }
+impl<B: Default + Pod> FromMemory for CStrBuf<B> {
+    type Raw    = Self;
+    type Error  = std::io::Error;
+    fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(raw) }
+}
+
+macro_rules! from_memory_le_integers {
+    ( $($le:ty => $int:ty),* $(,)? ) => {
+        $(
+            impl FromMemory for $int {
+                type Raw    = $le;
+                type Error  = std::io::Error;
+                fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(raw.to_le()) }
             }
         )*
     };
 }
 
-from_memory_integer!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128);
+from_memory_le_integers! {
+    i8le    => i8,
+    i16le   => i16,
+    i32le   => i32,
+    i64le   => i64,
+    i128le  => i128,
+    u8le    => u8,
+    u16le   => u16,
+    u32le   => u32,
+    u64le   => u64,
+    u128le  => u128,
+}
+
+macro_rules! from_memory_le_opt_nz_integers {
+    ( $($le:ty => Option<$nz:ty>),* $(,)? ) => {
+        $(
+            impl FromMemory for Option<$nz> {
+                type Raw    = $le;
+                type Error  = std::io::Error;
+                fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(<$nz>::new(raw.to_le())) }
+            }
+        )*
+    };
+}
+
+from_memory_le_opt_nz_integers! {
+    i8le    => Option<NonZeroI8>,
+    i16le   => Option<NonZeroI16>,
+    i32le   => Option<NonZeroI32>,
+    i64le   => Option<NonZeroI64>,
+    i128le  => Option<NonZeroI128>,
+    u8le    => Option<NonZeroU8>,
+    u16le   => Option<NonZeroU16>,
+    u32le   => Option<NonZeroU32>,
+    u64le   => Option<NonZeroU64>,
+    u128le  => Option<NonZeroU128>,
+}

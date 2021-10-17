@@ -1,4 +1,4 @@
-bitflags::bitflags! {
+from_memory_flags! {
     #[repr(transparent)]
     pub struct FileCharacteristics : u16 {
         const NONE                      = 0;
@@ -22,11 +22,5 @@ bitflags::bitflags! {
         const DLL                       = 0x2000;
         const UP_SYSTEM_ONLY            = 0x4000;
         const BYTES_REVERSED_HI         = 0x8000;
-    }
-}
-
-impl Default for FileCharacteristics {
-    fn default() -> Self {
-        Self::empty()
     }
 }

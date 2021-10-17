@@ -2,7 +2,7 @@ use crate::*;
 
 use bytemuck::*;
 
-use std::fmt::{self, *};
+use std::fmt::{self, Debug, Formatter};
 
 
 
@@ -102,4 +102,10 @@ impl Debug for Machine {
             other               => write!(fmt, "Machine(0x{:04x})", other.0.to_le()),
         }
     }
+}
+
+impl FromMemory for Machine {
+    type Raw    = Self;
+    type Error  = std::io::Error;
+    fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error> { Ok(raw) }
 }
