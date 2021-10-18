@@ -1,6 +1,7 @@
 extern crate maulingmonkey_format_exe as exe;
 
-use exe::pe;
+use exe::pe::{self, ImportDescriptor, RvaReader};
+use exe::FromMemory;
 
 use std::path::*;
 
@@ -10,7 +11,7 @@ fn main() {
     let exe_path    = args.next().unwrap_or(self_path);
     let exe_path    = PathBuf::from(exe_path);
 
-    let exe = exe::pe::Reader::open(exe_path).unwrap();
+    let mut exe = exe::pe::Reader::open(exe_path).unwrap();
 
     let ptr_size : u8 = match &exe.pe_header().optional_header {
         None => 0,
@@ -67,6 +68,13 @@ fn main() {
             0 => {}, // export
             1 => { // import
                 // https://stackoverflow.com/a/62850912
+                let mut rva = RvaReader::new(&mut exe, dd.virtual_address);
+                let n = dd.size / (std::mem::size_of::<ImportDescriptor>() as u32);
+                for i in 0 .. n {
+                    let import = ImportDescriptor::from_io(&mut rva).expect("unable to read import descriptor");
+                    eprintln!("    import[{}] = {:?}", i, import);
+                }
+                eprintln!();
             },
             2 => {}, // resource
             3 => {}, // exception

@@ -158,3 +158,99 @@ impl Display for Src {
         }
     }
 }
+
+
+
+pub struct RvaReader<'r, R> {
+    reader:             &'r mut Reader<R>,
+    rva:                u64,
+    section_idx:        usize,
+    section_remaining:  u64,
+}
+
+impl<'r, R: Read + Seek> RvaReader<'r, R> {
+    pub fn new(reader: &'r mut Reader<R>, rva: u32) -> Self {
+        let mut rr = Self {
+            reader,
+            rva:                rva.into(),
+            section_idx:        !0,
+            section_remaining:  0,
+        };
+        rr.find_section();
+        rr
+    }
+
+    fn find_section(&mut self) {
+        match u32::try_from(self.rva) {
+            Err(_) => {
+                self.section_idx = !0;
+                self.section_remaining = u64::MAX - 0x1_0000_0000 - self.rva;
+            },
+            Ok(rva) => {
+                for (i, section) in self.reader.pe_section_headers().iter().enumerate() {
+                    if section.virtual_address_range().contains(&rva) {
+                        self.section_idx        = i;
+                        self.section_remaining  = u64::from(rva - section.virtual_address) + u64::from(section.virtual_size);
+                        return;
+                    }
+                }
+
+                self.section_idx = !0;
+                self.section_remaining = self.reader.pe_section_headers().iter()
+                    .map(|s| s.virtual_address)
+                    .filter_map(|s_rva| s_rva.checked_sub(rva))
+                    .filter(|rem| *rem > 0)
+                    .min()
+                    .map(u64::from)
+                    .unwrap_or(u64::MAX - 0x1_0000_0000 - self.rva);
+            },
+        }
+    }
+}
+
+impl<'r, R: Read + Seek> Read for RvaReader<'r, R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let rem = usize::try_from(self.section_remaining).unwrap_or(!0);
+        let to_read = buf.len().min(rem);
+
+        let did_read = if let Some(section) = self.reader.pe_section_headers.get(self.section_idx) {
+            let section_start = section.pointer_to_raw_data.map_or(0, |nz| u32::from(nz));
+            self.reader.seek_to(self.reader.exe_start, section_start + (self.rva as u32 - section.virtual_address), "error seeking to RVA")?;
+            let did_read = self.reader.src.anno(self.reader.reader.borrow_mut().read(&mut buf[..to_read]), "error reading from RVA")?;
+            debug_assert!(did_read <= to_read);
+            did_read
+        } else {
+            buf[..to_read].fill(0u8);
+            to_read
+        };
+
+        self.rva += did_read as u64;
+        self.section_remaining -= did_read as u64;
+        if self.section_remaining == 0 { self.find_section() }
+        Ok(did_read)
+    }
+}
+
+impl<'r, R: Read + Seek> Seek for RvaReader<'r, R> {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        match pos {
+            SeekFrom::Current(delta) if delta < 0 => {
+                self.rva = self.rva.checked_sub(delta.unsigned_abs()).ok_or_else(|| io::Error::new(io::ErrorKind::UnexpectedEof, "attempted to seek before 0"))?;
+            },
+            SeekFrom::Current(delta) => {
+                self.rva = self.rva.checked_add(delta as u64).ok_or_else(|| io::Error::new(io::ErrorKind::UnexpectedEof, "attempted to seek past u64::MAX"))?;
+            },
+            SeekFrom::Start(rva) => {
+                self.rva = rva;
+            },
+            SeekFrom::End(delta) if delta <= 0 => {
+                self.rva = u64::MAX - delta.unsigned_abs();
+            },
+            SeekFrom::End(_) => {
+                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "cannot seek past end of RVA address range"));
+            },
+        }
+        self.find_section();
+        Ok(self.rva)
+    }
+}
