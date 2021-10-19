@@ -1,7 +1,5 @@
 use super::*;
 
-use bytemuck::*;
-
 
 
 from_memory_struct! {
@@ -10,11 +8,11 @@ from_memory_struct! {
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     pub struct ImportDescriptor {
-        characteristics_or_original_first_thunk:    u32,
-        pub time_date_stamp:                        TimeDate,
-        pub forwarder_chain:                        u32, // !0 if no forwarders
-        pub name:                                   u32,
-        pub first_thunk:                            u32, // RVA to IAT
+        pub import_lookup_table_rva:    u32,
+        pub time_date_stamp:            TimeDate,
+        pub forwarder_chain:            u32, // !0 if no forwarders
+        pub dll_ascii_name_rva:         u32,
+        pub iat_rva:                    u32,
     }
 }
 

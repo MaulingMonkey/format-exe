@@ -5,6 +5,7 @@ use super::*;
 from_memory_struct! {
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
+    /// *   <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#optional-header-data-directories-image-only>
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     pub struct DataDirectories {

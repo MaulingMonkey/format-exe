@@ -10,6 +10,7 @@ mod file_characteristics;           pub use file_characteristics::*;
 mod file_header;                    pub use file_header::*;
 mod header;                         pub use header::*;
 mod import_descriptor;              pub use import_descriptor::*;
+mod import_lookup_table;            pub use import_lookup_table::*;
 mod machine;                        pub use machine::*;
 mod optional_header_32;             pub use optional_header_32::*;
 mod optional_header_64;             pub use optional_header_64::*;
