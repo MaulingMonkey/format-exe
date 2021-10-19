@@ -14,6 +14,8 @@ use std::io::{self, Read};
 
 
 from_memory_struct! {
+    /// The basic MZ/DOS header, found at offset 0 of `.exe` and `.dll` files.<br>
+    /// For modern executables, the main field of note is [`pe_header_start`](struct.Header.html#structfield.pe_header_start): the PE header offset.
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     pub struct Header {
