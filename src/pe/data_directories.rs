@@ -3,6 +3,14 @@ use super::*;
 
 
 from_memory_struct! {
+    /// {
+    ///     [export](struct.DataDirectories.html#structfield.export),
+    ///     [import](struct.DataDirectories.html#structfield.import),
+    ///     [resource](struct.DataDirectories.html#structfield.resource),
+    ///     [exception](struct.DataDirectories.html#structfield.exception),
+    ///     ...
+    /// }
+    ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>
     /// *   <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#optional-header-data-directories-image-only>
