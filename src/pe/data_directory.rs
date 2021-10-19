@@ -1,3 +1,5 @@
+use super::*;
+
 use bytemuck::*;
 
 use std::fmt::{self, Debug, Formatter};
@@ -10,13 +12,13 @@ from_memory_struct! {
     #[repr(C)]
     #[derive(Clone, Copy, Default, PartialEq, Eq)]
     pub struct DataDirectory {
-        pub virtual_address:            u32,
-        pub size:                       u32,
+        pub virtual_address:    RVA,
+        pub size:               u32,
     }
 }
 
 impl DataDirectory {
-    pub const EMPTY : DataDirectory = DataDirectory { virtual_address: 0, size: 0 };
+    pub const EMPTY : DataDirectory = DataDirectory { virtual_address: RVA::NULL, size: 0 };
 }
 
 impl Debug for DataDirectory {
@@ -24,7 +26,7 @@ impl Debug for DataDirectory {
         if *self == DataDirectory::EMPTY {
             write!(fmt, "DataDirectory::EMPTY")
         } else {
-            write!(fmt, "DataDirectory {{ virtual_address: 0x{:08x}, size: {} }}", self.virtual_address, self.size)
+            write!(fmt, "DataDirectory {{ virtual_address: {:?}, size: {} }}", self.virtual_address, self.size)
         }
     }
 }

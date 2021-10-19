@@ -16,6 +16,7 @@ mod optional_header_32;             pub use optional_header_32::*;
 mod optional_header_64;             pub use optional_header_64::*;
 mod optional_header;                pub use optional_header::*;
 mod reader;                         pub use reader::*;
+mod rva;                            pub use rva::*;
 mod section_characteristics;        pub use section_characteristics::*;
 mod section_header;                 pub use section_header::*;
 mod subsystem;                      pub use subsystem::*;

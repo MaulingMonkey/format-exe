@@ -1,4 +1,5 @@
 use crate::*;
+use super::*;
 
 use std::cell::RefCell;
 use std::convert::*;
@@ -63,8 +64,8 @@ impl<R: Read + Seek> Reader<R> {
 
     pub fn pe_section_headers(&self) -> &[pe::SectionHeader] { &self.pe_section_headers[..] }
 
-    pub fn read_exact_rva<'a>(&'_ self, rva: Range<u32>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
-        let size = (rva.end - rva.start) as usize;
+    pub fn read_exact_rva<'a>(&'_ self, rva: Range<RVA>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
+        let size = rva.end.to_usize() - rva.start.to_usize();
         if scratch.len() < size { scratch.resize(size, 0u8); }
 
         let mut rva = rva.start;
@@ -169,10 +170,10 @@ pub struct RvaReader<'r, R> {
 }
 
 impl<'r, R: Read + Seek> RvaReader<'r, R> {
-    pub fn new(reader: &'r mut Reader<R>, rva: u32) -> Self {
+    pub fn new(reader: &'r mut Reader<R>, rva: RVA) -> Self {
         let mut rr = Self {
             reader,
-            rva:                rva.into(),
+            rva:                rva.to_u64(),
             section_idx:        !0,
             section_remaining:  0,
         };
@@ -188,6 +189,7 @@ impl<'r, R: Read + Seek> RvaReader<'r, R> {
             },
             Ok(rva) => {
                 for (i, section) in self.reader.pe_section_headers().iter().enumerate() {
+                    let rva = RVA::new(rva);
                     if section.virtual_address_range().contains(&rva) {
                         self.section_idx        = i;
                         self.section_remaining  = u64::from(rva - section.virtual_address) + u64::from(section.virtual_size);
@@ -198,7 +200,7 @@ impl<'r, R: Read + Seek> RvaReader<'r, R> {
                 self.section_idx = !0;
                 self.section_remaining = self.reader.pe_section_headers().iter()
                     .map(|s| s.virtual_address)
-                    .filter_map(|s_rva| s_rva.checked_sub(rva))
+                    .filter_map(|s_rva| s_rva.to_u32().checked_sub(rva))
                     .filter(|rem| *rem > 0)
                     .min()
                     .map(u64::from)
@@ -215,7 +217,7 @@ impl<'r, R: Read + Seek> Read for RvaReader<'r, R> {
 
         let did_read = if let Some(section) = self.reader.pe_section_headers.get(self.section_idx) {
             let section_start = section.pointer_to_raw_data.map_or(0, |nz| u32::from(nz));
-            self.reader.seek_to(self.reader.exe_start, section_start + (self.rva as u32 - section.virtual_address), "error seeking to RVA")?;
+            self.reader.seek_to(self.reader.exe_start, section_start + (RVA::new(self.rva as u32) - section.virtual_address), "error seeking to RVA")?;
             let did_read = self.reader.src.anno(self.reader.reader.borrow_mut().read(&mut buf[..to_read]), "error reading from RVA")?;
             debug_assert!(did_read <= to_read);
             did_read

@@ -17,7 +17,7 @@ from_memory_struct! {
     pub struct SectionHeader {
         pub name:                       abistr::CStrBuf<[u8; 8]>,
         pub virtual_size:               u32,
-        pub virtual_address:            u32,
+        pub virtual_address:            RVA,
         pub size_of_raw_data:           u32,
         pub pointer_to_raw_data:        Option<NonZeroU32>,
         pub pointer_to_relocations:     Option<NonZeroU32>,
@@ -33,7 +33,7 @@ impl SectionHeader {
         Self::from_io(read)
     }
 
-    pub fn virtual_address_range(&self) -> Range<u32> {
+    pub fn virtual_address_range(&self) -> Range<RVA> {
         self.virtual_address .. self.virtual_address + self.virtual_size
     }
 }

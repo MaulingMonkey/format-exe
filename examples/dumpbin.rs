@@ -25,7 +25,7 @@ fn main() {
     for (i, section) in exe.pe_section_headers().iter().enumerate() {
         eprintln!("sections[{}].name                = {:?}", i, section.name);
         eprintln!("sections[{}].characteristics     = {:?}", i, section.characteristics);
-        eprintln!("sections[{}].virtual_address     = 0x{:08x} .. 0x{:08x}", i, section.virtual_address, section.virtual_address + section.virtual_size);
+        eprintln!("sections[{}].virtual_address     = base + 0x{:08x} .. 0x{:08x}", i, section.virtual_address.to_u32(), section.virtual_address.to_u32() + section.virtual_size);
         match section.pointer_to_raw_data {
             None => eprintln!("sections[{}].data                = None", i),
             Some(_) => {
@@ -96,7 +96,7 @@ fn main() {
                 for i in 0 .. n {
                     let rva = dd.virtual_address + i * ptr_size;
                     let buf = exe.read_exact_rva(rva .. rva + ptr_size, &mut scratch).unwrap();
-                    eprint!("    function[{: >2}] = 0x", i);
+                    eprint!("    function[{: >2}] = base? + 0x", i);
                     for b in buf.iter().rev() {
                         eprint!("{:02x}", b);
                     }
