@@ -1,4 +1,5 @@
 from_memory_flags! {
+    /// IMAGE_FILE_*
     #[repr(transparent)]
     pub struct FileCharacteristics : u16 {
         const NONE                      = 0;
