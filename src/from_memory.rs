@@ -2,6 +2,7 @@ use crate::*;
 
 use abistr::CStrBuf;
 use bytemuck::*;
+use read_write_at::ReadAt;
 
 use std::convert::*;
 use std::num::*;
@@ -31,7 +32,21 @@ pub trait FromMemory : Sized {
     fn from_io(read: &mut impl io::Read) -> io::Result<Self> {
         let mut raw = Self::Raw::default();
         read.read_exact(bytes_of_mut(&mut raw))?;
-        Self::from_raw(raw).map_err(|e| e.into())
+        Self::from_raw(raw).map_err(|err| err.into())
+    }
+
+    fn from_read_at(read_at: &impl ReadAt, offset: u64) -> io::Result<Self> {
+        let mut raw = Self::Raw::default();
+        read_at.read_exact_at(bytes_of_mut(&mut raw), offset)?;
+        Self::from_raw(raw).map_err(|err| err.into())
+    }
+
+    fn from_read_at_advance(read_at: &impl ReadAt, offset: &mut u64) -> io::Result<Self> {
+        let mut raw = Self::Raw::default();
+        read_at.read_exact_at(bytes_of_mut(&mut raw), *offset)?;
+        let s = Self::from_raw(raw).map_err(|err| err.into())?;
+        *offset += std::mem::size_of::<Self::Raw>() as u64;
+        Ok(s)
     }
 }
 
