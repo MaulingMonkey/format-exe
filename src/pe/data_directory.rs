@@ -7,6 +7,11 @@ use std::fmt::{self, Debug, Formatter};
 
 
 from_memory_struct! {
+    /// {
+    ///     [virtual_address](struct.DataDirectory.html#structfield.virtual_address): [RVA],
+    ///     [size](struct.DataDirectory.html#structfield.size): [u32]
+    /// }
+    ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory>
     #[repr(C)]
