@@ -12,6 +12,7 @@ pub struct ReadAtFile {
 
 impl ReadAtFile {
     pub fn new(file: File) -> Self { Self::new_impl(file) }
+    pub fn try_clone(&self) -> io::Result<Self> { self.try_clone_impl() }
 }
 
 impl From<File> for ReadAtFile {
@@ -27,16 +28,19 @@ impl io::ReadAt for ReadAtFile {
 #[cfg(unix)] impl ReadAtFile {
     fn new_impl(file: File) -> Self { Self { file } }
     fn read_at_impl(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> { std::os::unix::fs::FileExt::read_at(&self.file, buf, offset) }
+    fn try_clone_impl(&self) -> io::Result<Self> { Ok(Self { file: self.file.try_clone()? }) }
 }
 
 #[cfg(windows)] impl ReadAtFile {
     fn new_impl(file: File) -> Self { Self { file } }
     fn read_at_impl(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> { std::os::windows::fs::FileExt::seek_read(&self.file, buf, offset) }
+    fn try_clone_impl(&self) -> io::Result<Self> { Ok(Self { file: self.file.try_clone()? }) }
 }
 
 #[cfg(target_env="wasi")] impl ReadAtFile {
     fn new_impl(file: File) -> Self { Self { file } }
     fn read_at_impl(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> { std::os::wasi::fs::FileExt::read_at(&self.file, buf, offset) }
+    fn try_clone_impl(&self) -> io::Result<Self> { Ok(Self { file: self.file.try_clone()? }) }
 }
 
 #[cfg(not(any(unix, windows, target_env="wasi")))] impl ReadAtFile {
@@ -47,4 +51,5 @@ impl io::ReadAt for ReadAtFile {
         file.seek(SeekFrom::Start(offset))?;
         file.read(buf)
     }
+    fn try_clone_impl(&self) -> io::Result<Self> { Ok(Self { file: self.file.borrow().try_clone()?.into() }) }
 }
