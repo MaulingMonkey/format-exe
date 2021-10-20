@@ -5,7 +5,8 @@ use std::ops::*;
 
 
 
-/// **R**elative **V**irtual **A**ddress
+/// **R**elative **V**irtual **A**ddress: A (32-bit) offset from the base
+/// address of the loaded executable.
 ///
 /// These are 32-bit values even in 64-bit executables - presumably you can't
 /// scatter an executable's static data across more than 4GB of virtual memory.
