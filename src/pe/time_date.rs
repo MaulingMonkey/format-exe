@@ -7,9 +7,20 @@ use std::time::{Duration, SystemTime};
 
 
 
-/// Seconds elapsed since midnight, January 1, 1970, Universal Coordinated Time
+/// Seconds elapsed since midnight, January 1st 1970, Universal Coordinated Time.
 ///
-/// "Y2K" issues to occur early Feb 7, 2106
+/// Wrapping issues will occur as early as Febuary 7th, 2106 (2³² seconds later.)
+///
+/// [Leap seconds](https://en.wikipedia.org/wiki/Leap_second) are ignored - all
+/// minutes are assumed to contain 60 seconds.  Presumably:<br>
+/// `2016-12-31 23:59:60 UTC` (a leap second) would've been encoded as:<br>
+/// `2016-12-31 23:59:59 UTC` or:<br>
+/// `2017-01-01  0:00:00 UTC`.
+///
+/// If there's ever a *negative* leap second (resulting in a minute containing
+/// 59 seconds instead of 60 or 61 seconds), a nonexistant:<br>
+/// `????-??-?? 23:59:59 UTC` might still be encoded due to bad math (timezone
+/// adjustments?), bugs, or [leap smear](https://developers.google.com/time/smear)ing.
 #[repr(transparent)]
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[derive(Pod, Zeroable)]
