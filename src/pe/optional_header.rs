@@ -16,3 +16,15 @@ impl OptionalHeader {
         }
     }
 }
+
+impl From<OptionalHeader32> for OptionalHeader {
+    fn from(header: OptionalHeader32) -> Self {
+        Self::OptionalHeader32(header)
+    }
+}
+
+impl From<OptionalHeader64> for OptionalHeader {
+    fn from(header: OptionalHeader64) -> Self {
+        Self::OptionalHeader64(header)
+    }
+}
