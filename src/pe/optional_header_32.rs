@@ -5,6 +5,8 @@ use bytemuck::*;
 
 
 from_memory_struct! {
+    /// "Optional" header for 32-bit executables/DLLs.
+    ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header32>
     #[repr(C)]
