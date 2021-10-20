@@ -2,6 +2,7 @@ use super::*;
 
 
 
+/// [OptionalHeader32] | [OptionalHeader64]
 #[derive(Clone, Copy, Debug)]
 pub enum OptionalHeader {
     OptionalHeader32(OptionalHeader32),
