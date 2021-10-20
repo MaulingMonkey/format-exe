@@ -18,4 +18,3 @@ abistr.features     = ["bytemuck"]
 bitflags            = "1"
 bytemuck.version    = "1"
 bytemuck.features   = ["derive"]
-read_write_at       = "0.1"
