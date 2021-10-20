@@ -13,7 +13,7 @@ use std::io;
 #[doc(hidden)]
 pub trait FromMemory : Sized {
     type Raw    : Default + Zeroable + Pod;
-    type Error  : Into<io::Error> + From<EofError>;
+    type Error  : Into<io::Error> + From<error::Eof>;
 
     fn from_raw(raw: Self::Raw) -> Result<Self, Self::Error>;
 
@@ -25,7 +25,7 @@ pub trait FromMemory : Sized {
             *mem = &mem[dst.len()..];
             Self::from_raw(raw)
         } else {
-            Err(Self::Error::from(EofError))
+            Err(Self::Error::from(error::Eof))
         }
     }
 
@@ -47,16 +47,6 @@ pub trait FromMemory : Sized {
         let s = Self::from_raw(raw).map_err(|err| err.into())?;
         *offset += std::mem::size_of::<Self::Raw>() as u64;
         Ok(s)
-    }
-}
-
-
-
-pub struct EofError;
-
-impl From<EofError> for io::Error {
-    fn from(_: EofError) -> io::Error {
-        io::Error::from(io::ErrorKind::UnexpectedEof)
     }
 }
 

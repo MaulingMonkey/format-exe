@@ -1,6 +1,7 @@
 #[macro_use] #[path = "macros/_macros.rs"] mod macros;
 
 pub mod mz;
+#[path = "error/_error.rs"]         pub mod error;
 #[path = "io/_io.rs"]               pub mod io;
 #[path = "pe/_pe.rs"]               pub mod pe;
 
