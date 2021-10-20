@@ -24,12 +24,12 @@ impl Reader<ReadAtFile> {
         let path = path.into();
         let file = File::open(&path);
         let src = Src::PathBuf(path);
-        Reader::read_src(ReadAtFile::new(src.anno(file, "error opening pe::Reader")?), src)
+        Reader::read_src_at(ReadAtFile::new(src.anno(file, "error opening pe::Reader")?), src, 0)
     }
 }
 
 impl<R: ReadAt> Reader<R> {
-    pub fn read(reader: R) -> io::Result<Self> { Self::read_src(reader, Src::Unknown) }
+    pub fn read(reader: R) -> io::Result<Self> { Self::read_src_at(reader, Src::Unknown, 0) }
 
     pub fn get_pe_section_header(&self, idx: impl TryInto<u16>) -> Option<&pe::SectionHeader> {
         let idx = idx.try_into().ok()?;
@@ -90,8 +90,7 @@ impl<R: ReadAt> Reader<R> {
         Ok(scratch[..].strip_suffix(&[0]).unwrap_or(&scratch[..]))
     }
 
-    fn read_src(reader: R, src: Src) -> io::Result<Self> {
-        let exe_start = 0; // src.anno(reader.stream_position(), "error reading stream position for mz::Header")?;
+    fn read_src_at(reader: R, src: Src, exe_start: u64) -> io::Result<Self> {
         let mz_header = src.anno(mz::Header::from_read_at(&reader, exe_start), "error reading mz::Header")?;
 
         let mut pe_reader = ReadAtReader::new(&reader, exe_start + u64::from(mz_header.pe_header_start));
