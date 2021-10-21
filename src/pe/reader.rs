@@ -2,6 +2,8 @@ use crate::*;
 use crate::io::{self, *};
 use super::*;
 
+use maulingmonkey_io_adapters::{ReadAt, ReadAtCursor, ReadAtRef, SeeklessFile};
+
 use std::convert::*;
 use std::fmt::{self, *};
 use std::fs::File;
@@ -19,12 +21,12 @@ pub struct Reader<R> {
     pe_section_headers:         Vec<pe::SectionHeader>,
 }
 
-impl Reader<ReadAtFile> {
+impl Reader<SeeklessFile> {
     pub fn open(path: impl Into<PathBuf>) -> io::Result<Self> {
         let path = path.into();
         let file = File::open(&path);
         let src = Src::PathBuf(path);
-        Reader::read_src_at(ReadAtFile::new(src.anno(file, "error opening pe::Reader")?), src, 0)
+        Reader::read_src_at(SeeklessFile::from(src.anno(file, "error opening pe::Reader")?), src, 0)
     }
 }
 
@@ -93,7 +95,7 @@ impl<R: ReadAt> Reader<R> {
     fn read_src_at(reader: R, src: Src, exe_start: u64) -> io::Result<Self> {
         let mz_header = src.anno(mz::Header::from_read_at(&reader, exe_start), "error reading mz::Header")?;
 
-        let mut pe_reader = ReadAtReader::new(&reader, exe_start + u64::from(mz_header.pe_header_start));
+        let mut pe_reader = ReadAtCursor::new(ReadAtRef(&reader), exe_start + u64::from(mz_header.pe_header_start), !0);
         let pe_header = src.anno(pe::Header::read_from(&mut pe_reader), "error reading pe::Header")?;
 
         let mut pe_section_headers = vec![pe::SectionHeader::default(); pe_header.file_header.nsections.into()];
@@ -270,7 +272,7 @@ impl<'r, R: ReadAt> Seek for RvaReader<'r, R> {
     }
 }
 
-impl<'r, R: ReadAt> ReadAt for RvaReader<'r, R> {
+impl<'r, R: ReadAt> maulingmonkey_io_adapters::ReadAt for RvaReader<'r, R> {
     fn read_at(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
         let mut r = (*self).clone();
         r.seek(SeekFrom::Start(offset))?;

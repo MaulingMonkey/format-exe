@@ -18,3 +18,4 @@ abistr.features     = ["bytemuck"]
 bitflags            = "1"
 bytemuck.version    = "1"
 bytemuck.features   = ["derive"]
+maulingmonkey-io-adapters.git = "https://github.com/MaulingMonkey/io-adapters"

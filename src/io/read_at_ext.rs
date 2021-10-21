@@ -1,29 +1,12 @@
 use crate::io;
 
+use maulingmonkey_io_adapters::ReadAt;
+
 use std::convert::*;
 
 
 
-pub trait ReadAt {
-    fn read_at(&self, buf: &mut [u8], offset: u64) -> io::Result<usize>;
-
-    fn read_exact_at(&self, buf: &mut [u8], offset: u64) -> io::Result<()> {
-        let len64 = u64::try_from(buf.len()).map_err(|_| io::Error::new(io::ErrorKind::UnexpectedEof, "buf.len() exceeds u64 range"))?;
-        let _end = offset.checked_add(len64).ok_or_else(|| io::Error::new(io::ErrorKind::UnexpectedEof, "offset + buf.len() exceeds u64 range"))?;
-
-        let mut buf = buf;
-        let mut offset = offset;
-        while !buf.is_empty() {
-            let read = self.read_at(buf, offset)?;
-            if read == 0 {
-                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "EOF reached before buf filled"));
-            }
-            buf = &mut buf[read..];
-            offset += read as u64;
-        }
-        Ok(())
-    }
-
+pub trait ReadAtExt : ReadAt {
     fn read_exact_at_advance(&self, buf: &mut [u8], offset: &mut u64) -> io::Result<()> {
         self.read_exact_at(buf, *offset)?;
         *offset = offset.checked_add(buf.len() as u64).ok_or_else(|| io::Error::new(io::ErrorKind::UnexpectedEof, "read past u64::MAX"))?;
@@ -64,8 +47,4 @@ pub trait ReadAt {
     }
 }
 
-impl<R: ReadAt> ReadAt for &R {
-    fn read_at(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
-        (**self).read_at(buf, offset)
-    }
-}
+impl<R: ReadAt> ReadAtExt for R {}

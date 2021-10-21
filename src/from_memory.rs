@@ -1,8 +1,8 @@
 use crate::*;
-use crate::io::ReadAt;
 
 use abistr::CStrBuf;
 use bytemuck::*;
+use maulingmonkey_io_adapters::ReadAt;
 
 use std::convert::*;
 use std::num::*;
