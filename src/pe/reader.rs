@@ -32,16 +32,7 @@ impl Reader<SeeklessFile> {
 impl<R: ReadAt> Reader<R> {
     pub fn read(reader: R) -> io::Result<Self> { Self::read_src(reader, Src::Unknown) }
 
-    pub fn get_pe_section_header(&self, idx: impl TryInto<u16>) -> Option<&pe::SectionHeader> {
-        let idx = idx.try_into().ok()?;
-        self.pe_section_headers.get(usize::from(idx))
-    }
-
-    pub fn pe_section_header(&self, idx: impl TryInto<u16>) -> &pe::SectionHeader {
-        self.get_pe_section_header(idx).expect("pe::Reader::pe_section_header(idx): idx out of bounds")
-    }
-
-    pub fn read_pe_section_data_by_idx<I>(&self, idx: I) -> io::Result<Vec<u8>> where I : TryInto<u16> {
+    pub fn read_pe_section_data_by_idx(&self, idx: impl TryInto<usize>) -> io::Result<Vec<u8>> {
         let header = *self.pe_section_header(idx);
         self.read_pe_section_data(&header)
     }
@@ -58,8 +49,6 @@ impl<R: ReadAt> Reader<R> {
         self.src.anno(self.reader.read_exact_at(&mut data[..n], ptr), "error reading PE section")?;
         Ok(&data[..n])
     }
-
-    pub fn pe_section_headers(&self) -> &[pe::SectionHeader] { &self.pe_section_headers[..] }
 
     pub fn read_exact_rva<'a>(&'_ self, rva: Range<RVA>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
         let size = rva.end.to_usize() - rva.start.to_usize();
@@ -110,12 +99,22 @@ impl<R: ReadAt> Reader<R> {
 impl<R> Reader<R> {
     pub fn mz_header(&self) -> &mz::Header { &self.mz_header }
     pub fn pe_header(&self) -> &pe::Header { &self.pe_header }
+    pub fn pe_section_headers(&self) -> &[pe::SectionHeader] { &self.pe_section_headers[..] }
 
     pub fn data_directory(&self) -> &pe::DataDirectories {
         self.pe_header.optional_header.as_ref().map_or(
             &pe::DataDirectories::EMPTY,
             |oh| oh.data_directory(),
         )
+    }
+
+    pub fn get_pe_section_header(&self, idx: impl TryInto<usize>) -> Option<&pe::SectionHeader> {
+        let idx = idx.try_into().ok()?;
+        self.pe_section_headers.get(idx)
+    }
+
+    pub fn pe_section_header(&self, idx: impl TryInto<usize>) -> &pe::SectionHeader {
+        self.get_pe_section_header(idx).expect("pe::Reader::pe_section_header(idx): idx out of bounds")
     }
 }
 
