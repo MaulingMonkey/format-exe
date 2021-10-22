@@ -15,7 +15,6 @@ use std::path::PathBuf;
 pub struct Reader<R> {
     src:                        Src,
     reader:                     R,
-    exe_start:                  u64,
     mz_header:                  mz::Header,
     pe_header:                  pe::Header,
     pe_section_headers:         Vec<pe::SectionHeader>,
@@ -26,12 +25,12 @@ impl Reader<SeeklessFile> {
         let path = path.into();
         let file = File::open(&path);
         let src = Src::PathBuf(path);
-        Reader::read_src_at(SeeklessFile::from(src.anno(file, "error opening pe::Reader")?), src, 0)
+        Reader::read_src(SeeklessFile::from(src.anno(file, "error opening pe::Reader")?), src)
     }
 }
 
 impl<R: ReadAt> Reader<R> {
-    pub fn read(reader: R) -> io::Result<Self> { Self::read_src_at(reader, Src::Unknown, 0) }
+    pub fn read(reader: R) -> io::Result<Self> { Self::read_src(reader, Src::Unknown) }
 
     pub fn get_pe_section_header(&self, idx: impl TryInto<u16>) -> Option<&pe::SectionHeader> {
         let idx = idx.try_into().ok()?;
@@ -56,12 +55,7 @@ impl<R: ReadAt> Reader<R> {
     pub fn read_pe_section_data_inplace<'a>(&'_ self, header: &'_ pe::SectionHeader, offset: u32, data: &'a mut [u8]) -> io::Result<&'a [u8]> {
         let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into())) + u64::from(offset);
         let n = usize::try_from(header.size_of_raw_data.saturating_sub(offset)).unwrap_or(!0).min(data.len());
-        if n > 0 {
-            self.src.anno(self.reader.read_exact_at(
-                &mut data[..n],
-                self.exe_start + ptr,
-            ), "error reading PE section")?;
-        }
+        self.src.anno(self.reader.read_exact_at(&mut data[..n], ptr), "error reading PE section")?;
         Ok(&data[..n])
     }
 
@@ -92,10 +86,10 @@ impl<R: ReadAt> Reader<R> {
         Ok(scratch[..].strip_suffix(&[0]).unwrap_or(&scratch[..]))
     }
 
-    fn read_src_at(reader: R, src: Src, exe_start: u64) -> io::Result<Self> {
-        let mz_header = src.anno(mz::Header::from_read_at(&reader, exe_start), "error reading mz::Header")?;
+    fn read_src(reader: R, src: Src) -> io::Result<Self> {
+        let mz_header = src.anno(mz::Header::from_read_at(&reader, 0), "error reading mz::Header")?;
 
-        let mut pe_reader = ReadAtCursor::new(ReadAtRef(&reader), exe_start + u64::from(mz_header.pe_header_start), !0);
+        let mut pe_reader = ReadAtCursor::new(ReadAtRef(&reader), u64::from(mz_header.pe_header_start), !0);
         let pe_header = src.anno(pe::Header::read_from(&mut pe_reader), "error reading pe::Header")?;
 
         let mut pe_section_headers = vec![pe::SectionHeader::default(); pe_header.file_header.nsections.into()];
@@ -106,7 +100,6 @@ impl<R: ReadAt> Reader<R> {
         Ok(Self {
             src,
             reader,
-            exe_start,
             mz_header,
             pe_header,
             pe_section_headers,
@@ -227,11 +220,9 @@ impl<'r, R: ReadAt> Read for RvaReader<'r, R> {
         let did_read = if let Some(section) = self.reader.pe_section_headers.get(self.section_idx) {
             let section_start = u64::from(section.pointer_to_raw_data.map_or(0, |nz| u32::from(nz)));
 
-            //self.reader.seek_to(self.reader.exe_start, section_start + (RVA::new(self.rva as u32) - section.virtual_address), "error seeking to RVA")?;
-            //let did_read = self.reader.src.anno(self.reader.reader.borrow_mut().read(&mut buf[..to_read]), "error reading from RVA")?;
             let did_read = self.reader.src.anno(self.reader.reader.read_at(
                 &mut buf[..to_read],
-                self.reader.exe_start + section_start + u64::from(RVA::new(self.rva as u32) - section.virtual_address),
+                section_start + u64::from(RVA::new(self.rva as u32) - section.virtual_address),
             ), "error reading from RVA")?;
 
             debug_assert!(did_read <= to_read);
