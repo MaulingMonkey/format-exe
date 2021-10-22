@@ -1,6 +1,6 @@
 extern crate maulingmonkey_format_exe as exe;
 
-use exe::pe::{self, ImportDescriptor, RvaReader, RVA};
+use exe::pe::{self, ImportDescriptor, ImportLookupTableEntry, RvaReader, RVA};
 use exe::FromMemory;
 
 use std::path::*;
@@ -11,7 +11,7 @@ fn main() {
     let exe_path    = args.next().unwrap_or(self_path);
     let exe_path    = PathBuf::from(exe_path);
 
-    let exe = exe::pe::Reader::open(exe_path).unwrap();
+    let exe = pe::Reader::open(exe_path).unwrap();
 
     let ptr_size : u8 = match &exe.pe_header().optional_header {
         None => 0,
@@ -83,11 +83,37 @@ fn main() {
                         //eprintln!("        time_date_stamp:         {:?},", import.time_date_stamp);
                         //eprintln!("        forwarder_chain:         {:?},", import.forwarder_chain);
                         //eprintln!("        dll_ascii_name_rva:      {:?},", import.dll_ascii_name_rva);
-                        //eprintln!("        dll_ascii_name:          {:?},", exe.read_asciiz_rva(import.dll_ascii_name_rva, &mut scratch).map(|s| String::from_utf8_lossy(s)));
+                        //eprintln!("        dll_ascii_name:          {:?},", exe.read_asciiz_rva(import.dll_ascii_name_rva, &mut scratch));
                         //eprintln!("    }}");
                         //eprintln!();
 
-                        eprintln!("    import[{}].dll_ascii_name = {:?},", i, exe.read_asciiz_rva(import.dll_ascii_name_rva, &mut scratch).map(|s| String::from_utf8_lossy(s)));
+                        eprintln!("    import[{}].dll_ascii_name = {:?},", i, exe.read_asciiz_rva(import.dll_ascii_name_rva, &mut scratch));
+
+                        let mut rva = RvaReader::new(&exe, import.import_lookup_table_rva);
+                        for k in 0.. {
+                            match ptr_size {
+                                4 => match pe::ImportLookupTableEntry32::from_io(&mut rva) {
+                                    Ok(ilt) if ilt.is_eot() => break,
+                                    Ok(ilt) => {
+                                        if let Some(ord) = ilt.ordinal()                { eprintln!("    import[{}].import_lookup_table[{}] = ordinal {}", i, k, ord); }
+                                        else if let Some(rva) = ilt.name_table_rva()    { eprintln!("    import[{}].import_lookup_table[{}] = {:?}", i, k, exe.read_asciiz_rva(rva+2, &mut scratch)); }
+                                        else                                            { eprintln!("    import[{}].import_lookup_table[{}] = {:?}", i, k, ilt); }
+                                    },
+                                    err => eprintln!("    import[{}].import_lookup_table[{}] = {:?}", i, k, err),
+                                },
+                                8 => match pe::ImportLookupTableEntry64::from_io(&mut rva) {
+                                    Ok(ilt) if ilt.is_eot() => break,
+                                    Ok(ilt) => {
+                                        if let Some(ord) = ilt.ordinal()                { eprintln!("    import[{}].import_lookup_table[{}] = ordinal {}", i, k, ord); }
+                                        else if let Some(rva) = ilt.name_table_rva()    { eprintln!("    import[{}].import_lookup_table[{}] = {:?}", i, k, exe.read_asciiz_rva(rva+2, &mut scratch)); }
+                                        else                                            { eprintln!("    import[{}].import_lookup_table[{}] = {:?}", i, k, ilt); }
+                                    },
+                                    err => eprintln!("    import[{}].import_lookup_table[{}] = {:?}", i, k, err),
+                                },
+                                _ => break,
+                            }
+                        }
+                        eprintln!();
                     }
                 }
             },

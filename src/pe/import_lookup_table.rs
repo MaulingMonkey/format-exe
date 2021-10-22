@@ -1,4 +1,5 @@
 use crate::*;
+use crate::pe::RVA;
 
 
 
@@ -10,7 +11,7 @@ pub trait ImportLookupTableEntry {
     fn import_by_ordinal(&self) -> bool;
     fn import_by_name   (&self) -> bool;
     fn ordinal          (&self) -> Option<u16>;
-    fn name_table_rva   (&self) -> Option<u32>;
+    fn name_table_rva   (&self) -> Option<RVA>;
 }
 
 /// ## References
@@ -42,7 +43,7 @@ impl FromMemory for ImportLookupTableEntry64 {
 impl ImportLookupTableEntry for ImportLookupTableEntry32 {
     fn is_eot           (&self) -> bool { self.0 == u32le::new(0) }
     fn import_by_ordinal(&self) -> bool { (self.0.to_le() & (1 << 31)) != 0 }
-    fn import_by_name   (&self) -> bool { (self.0.to_le() & (1 << 31)) != 0 }
+    fn import_by_name   (&self) -> bool { !self.is_eot() && (self.0.to_le() & (1 << 31)) == 0 }
 
     fn ordinal(&self) -> Option<u16> {
         if self.import_by_ordinal() {
@@ -52,9 +53,9 @@ impl ImportLookupTableEntry for ImportLookupTableEntry32 {
         }
     }
 
-    fn name_table_rva(&self) -> Option<u32> {
+    fn name_table_rva(&self) -> Option<RVA> {
         if self.import_by_name() {
-            Some(self.0.to_le() as u32 & 0x7FFF_FFFF)
+            Some(RVA::new(self.0.to_le() as u32 & 0x7FFF_FFFF))
         } else {
             None
         }
@@ -64,7 +65,7 @@ impl ImportLookupTableEntry for ImportLookupTableEntry32 {
 impl ImportLookupTableEntry for ImportLookupTableEntry64 {
     fn is_eot           (&self) -> bool { self.0 == u64le::new(0) }
     fn import_by_ordinal(&self) -> bool { (self.0.to_le() & (1 << 63)) != 0 }
-    fn import_by_name   (&self) -> bool { (self.0.to_le() & (1 << 63)) != 0 }
+    fn import_by_name   (&self) -> bool { !self.is_eot() && (self.0.to_le() & (1 << 31)) == 0 }
 
     fn ordinal(&self) -> Option<u16> {
         if self.import_by_ordinal() {
@@ -74,9 +75,9 @@ impl ImportLookupTableEntry for ImportLookupTableEntry64 {
         }
     }
 
-    fn name_table_rva(&self) -> Option<u32> {
+    fn name_table_rva(&self) -> Option<RVA> {
         if self.import_by_name() {
-            Some(self.0.to_le() as u32 & 0x7FFF_FFFF)
+            Some(RVA::new(self.0.to_le() as u32 & 0x7FFF_FFFF))
         } else {
             None
         }

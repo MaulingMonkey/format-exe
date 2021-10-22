@@ -69,10 +69,20 @@ impl<R: ReadAt> Reader<R> {
         Ok(&scratch[..size])
     }
 
-    pub fn read_asciiz_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
+    pub fn read_strz_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
         scratch.clear();
         BufReader::new(RvaReader::new(self, rva)).read_until(0, scratch)?;
         Ok(scratch[..].strip_suffix(&[0]).unwrap_or(&scratch[..]))
+    }
+
+    pub fn read_utf8z_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a str> {
+        Ok(std::str::from_utf8(self.read_strz_rva(rva, scratch)?).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?)
+    }
+
+    pub fn read_asciiz_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a str> {
+        let s = self.read_utf8z_rva(rva, scratch)?;
+        if !s.is_ascii() { return Err(io::Error::new(io::ErrorKind::InvalidData, "string is not ASCII")); }
+        Ok(s)
     }
 
     fn read_src(reader: R, src: Src) -> io::Result<Self> {
