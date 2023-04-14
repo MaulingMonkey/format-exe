@@ -3,10 +3,19 @@ use super::*;
 
 
 /// [OptionalHeader32] | [OptionalHeader64]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub enum OptionalHeader {
     OptionalHeader32(OptionalHeader32),
     OptionalHeader64(OptionalHeader64),
+}
+
+impl core::fmt::Debug for OptionalHeader {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            Self::OptionalHeader32(oh) => core::fmt::Debug::fmt(oh, fmt),
+            Self::OptionalHeader64(oh) => core::fmt::Debug::fmt(oh, fmt),
+        }
+    }
 }
 
 impl OptionalHeader {
