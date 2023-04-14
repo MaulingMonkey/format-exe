@@ -1,4 +1,12 @@
-//! The MS-DOS EXE format, also known as MZ after its signature (the initials of Microsoft engineer **M**ark **Z**bykowski)
+//! The MS-DOS EXE/DLL format, also known as MZ after its signature (the initials of Microsoft engineer **M**ark **Z**bykowski)
+//!
+//! | Type  | Desc  |
+//! | ------| ------|
+//! | [`Header`]        | The basic MZ/DOS header, found at offset 0 of `.exe` and `.dll` files.<br>For modern binaries, the main field of note is [`pe_header_start`](struct.Header.html#structfield.pe_header_start) - the [`pe::Header`] offset.
+//! | [`Relocation`]    | A relocation entry for 16-bit MS-DOS binaries.  Ignorable for modern 32/64-bit binaries.
+//! | [`Bytes`]         | MZ binaries have many [`u16`] values in different units, these newtypes help avoid confusion.
+//! | [`Pages`]         | <code>[Pages]\(1\) = [Bytes]\(16\)</code>
+//! | [`Paragraphs`]    | <code>[Paragraphs]\(1\) = [Pages]\(32\) = [Bytes]\(512\)</code>
 //!
 //! ## References
 //! *   <https://wiki.osdev.org/MZ>
@@ -15,36 +23,59 @@ use std::io::{self, Read};
 
 from_memory_struct! {
     /// The basic MZ/DOS header, found at offset 0 of `.exe` and `.dll` files.<br>
-    /// For modern executables, the main field of note is [`pe_header_start`](struct.Header.html#structfield.pe_header_start): the PE header offset.
+    /// For modern binaries, the main field of note is [`pe_header_start`](struct.Header.html#structfield.pe_header_start) - the [`pe::Header`] offset.
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     pub struct Header {
+        /// `b"MZ"` for valid MZ/DOS modules.
         pub signature:          abistr::CStrBuf<[u8; 2]>,
+        /// Size of the last page.
         pub last_page:          Bytes,
+        /// Number of 512-byte pages.
         pub pages:              Pages,
+        /// Number of 16-bit [`mz::Relocation`]s.
         pub nrelocs:            u16,
+        /// Size of this [`mz::Header`] (+ any custom header data, [`mz::Relocation`]s?).  Does *not* include [`pe::Header`].
         pub hdrsize:            Paragraphs,
+        /// Memory *required* by the program, excluding the [PSP](https://en.wikipedia.org/wiki/Program_Segment_Prefix) and image.
         pub minalloc:           Paragraphs,
+        /// Memory *requested* by the program.
         pub maxalloc:           Paragraphs,
+        /// Initial value of the 16-bit [Stack Segment](https://en.wikipedia.org/wiki/X86_memory_segmentation) register.
         pub ss:                 u16,
+        /// Initial value of the 16-bit [Stack Pointer](https://en.wikipedia.org/wiki/X86_memory_segmentation) register.
         pub sp:                 u16,
+        /// When added to the sum of all other [`u16`]s in the file, the result should be zero.
         pub checksum:           u16,
+        /// Initial value of the 16-bit [Instruction Pointer](https://en.wikipedia.org/wiki/X86_memory_segmentation) register.
         pub ip:                 u16,
+        /// Initial value of the 16-bit [Code Segment](https://en.wikipedia.org/wiki/X86_memory_segmentation) register.
         pub cs:                 u16,
+        /// Offset from the start of this [`mz::Header`] (typically @ offset 0) to the first [`mz::Relocation`].
         pub relocs:             u16,
+        /// Typically 0 for "the main executable.  See <https://retrocomputing.stackexchange.com/a/25742>.
         pub overlay:            u16,
 
-        // PE extensions
-        #[doc(hidden)] pub _reserved_a:        Reserved<8>,
+        /// The fields below are [`pe`] extensions to the [`mz`] format, and may not be present in a more basic MS-DOS or Windows 3.1 executable.
+        pub _pe_extensions:     (),
+
+        // Reserved
+        #[doc(hidden)] pub _reserved_a: Reserved<8>,
+        /// Typically 0.
         pub oem_id:             u16,
+        /// Typically 0.
         pub oem_info:           u16,
-        #[doc(hidden)] pub _reserved_b:        Reserved<20>,
+        // Reserved
+        #[doc(hidden)] pub _reserved_b: Reserved<20>,
+        /// Offset from the start of this [`mz::Header`] (typically @ offset 0) to the [`pe::Header`].
         pub pe_header_start:    u32,
 
         #[doc(hidden)] pub _non_exhaustive:    (),
     }
 
-    /// { pub [offset](struct.Relocation.html#structfield.offset): [u16], pub [segment](struct.Relocation.html#structfield.segment): [u16] }
+    /// A relocation entry for 16-bit MS-DOS binaries.
+    /// Ignorable for modern 32/64-bit binaries.<br>
+    /// <code>struct { pub [offset](struct.Relocation.html#structfield.offset): [u16], pub [segment](struct.Relocation.html#structfield.segment): [u16] }</code>
     #[repr(C)]
     #[derive(Clone, Copy, Debug, Default)]
     pub struct Relocation {
@@ -55,19 +86,19 @@ from_memory_struct! {
 
 // A paragraph is 16 bytes in size. A page (or block) is 512 bytes long.
 
-/// 1 **[Pages]** = 32 [Paragraphs] = 512 [Bytes]
+/// ≈[`u16`] - 1 **[Pages]** = 32 [Paragraphs] = 512 [Bytes]
 #[repr(transparent)]
 #[derive(Clone, Copy, Default)]
 #[derive(Pod, Zeroable)]
 pub struct Pages(u16);
 
-/// 1 [Pages] = 32 **[Paragraphs]** = 512 [Bytes]
+/// ≈[`u16`] - 1 [Pages] = 32 **[Paragraphs]** = 512 [Bytes]
 #[repr(transparent)]
 #[derive(Clone, Copy, Default)]
 #[derive(Pod, Zeroable)]
 pub struct Paragraphs(u16);
 
-/// 1 [Pages] = 32 [Paragraphs] = 512 **[Bytes]**
+/// ≈[`u16`] - 1 [Pages] = 32 [Paragraphs] = 512 **[Bytes]**
 #[repr(transparent)]
 #[derive(Clone, Copy, Default)]
 #[derive(Pod, Zeroable)]
@@ -80,6 +111,7 @@ impl Header {
     ///
     /// ## Errors
     /// * [`io::ErrorKind::InvalidData`] if [`signature`](#structfield.signature) ≠ `"MZ"`
+    /// * No error if <code>sum([`checksum`](#structfield.checksum), ...entire file...)</code> ≠ `0`
     /// * [`io::ErrorKind::UnexpectedEof`] if `read` didn't contain enough data
     pub fn read_from(read: &mut impl Read) -> io::Result<Self> {
         let s = Header::from_io(read)?;
