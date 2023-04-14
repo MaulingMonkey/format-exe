@@ -3,6 +3,7 @@
     "version":          "2.0.0",
     "problemMatcher":   "$rustc",
     "type":             "shell",
+    "presentation":     { "clear": true, "panel": "shared", "reveal": "always" },
     "tasks": [
         {
             "label":            "build",
@@ -20,19 +21,16 @@
         {
             "label":            "cargo build --package maulingmonkey-format-exe --example dumpbin",
             "command":          "cargo build --package maulingmonkey-format-exe --example dumpbin",
-            "presentation":     { "clear": true, "panel": "shared", "reveal": "always" },
         },
         {
             "label":            "cargo build --package maulingmonkey-format-exe --example dumpbin --release",
             "command":          "cargo build --package maulingmonkey-format-exe --example dumpbin --release",
-            "presentation":     { "clear": true, "panel": "shared", "reveal": "always" },
         },
         {
             "label":            "open repository (maulingmonkey-format-exe)",
             "windows":          { "command": "start \"\"    \"https://github.com/MaulingMonkey/format-exe\"" },
             "linux":            { "command": "xdg-open      \"https://github.com/MaulingMonkey/format-exe\"" },
             "osx":              { "command": "open          \"https://github.com/MaulingMonkey/format-exe\"" },
-            "presentation":     { "clear": true, "panel": "shared", "reveal": "silent" },
         },
     ]
 }
