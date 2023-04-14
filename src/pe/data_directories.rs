@@ -77,7 +77,7 @@ from_memory_struct! {
 
 impl DataDirectories {
     pub fn iter_name_dd<'a>(&'a self) -> impl Iterator<Item = (&'static str, &'a DataDirectory)> {
-        std::array::IntoIter::new([
+        IntoIterator::into_iter([
             ("export",          &self.export            ),
             ("import",          &self.import            ),
             ("resource",        &self.resource          ),
