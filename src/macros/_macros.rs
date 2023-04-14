@@ -62,6 +62,7 @@ macro_rules! from_memory_flags {
     ) => {
         $(
             bitflags::bitflags! {
+                /// ⚑
                 $( #[ $($struct_meta),+ ] )*
                 $struct_vis struct $struct_ident : $struct_inner {
                     $(
