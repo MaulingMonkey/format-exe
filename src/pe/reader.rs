@@ -51,11 +51,10 @@ impl<R: ReadAt> Reader<R> {
     }
 
     pub fn read_exact_rva<'a>(&'_ self, rva: Range<RVA>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
-        let size = rva.end.to_usize() - rva.start.to_usize();
-        if scratch.len() < size { scratch.resize(size, 0u8); }
+        scratch.resize(rva.end.to_usize() - rva.start.to_usize(), 0u8);
 
         let mut rva = rva.start;
-        let mut o = &mut scratch[..size];
+        let mut o = &mut scratch[..];
         while !o.is_empty() {
             if let Some(section) = self.pe_section_headers.iter().find(|s| s.virtual_address_range().contains(&rva)).copied() {
                 let n = self.read_pe_section_data_inplace(&section, rva - section.virtual_address, o)?.len();
@@ -66,7 +65,7 @@ impl<R: ReadAt> Reader<R> {
             }
         }
 
-        Ok(&scratch[..size])
+        Ok(&scratch[..])
     }
 
     pub fn read_strz_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
