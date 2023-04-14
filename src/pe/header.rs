@@ -8,11 +8,15 @@ use std::mem::{size_of, size_of_val};
 
 
 
+/// The main [`pe`] header, found at [`mz::Header::pe_header_start`].
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Header {
+    /// `b"PE\0\0"` for valid PE modules.
     pub signature:          Signature,
+    /// Basic metadata like [`Machine`] type etc.
     pub file_header:        FileHeader,
+    /// Lots more data like image base address, windows subsystem, ...
     pub optional_header:    Option<OptionalHeader>,
 }
 
@@ -93,6 +97,8 @@ impl Header {
 #[derive(Clone, Copy, Debug, Default)]
 #[derive(Pod, Zeroable)]
 struct RawHeader {
+    /// `b"PE\0\0"` for valid PE modules.
     pub signature:                  Signature,
+    /// Basic metadata like [`Machine`] type etc.
     pub file_header:                <FileHeader as FromMemory>::Raw,
 }
