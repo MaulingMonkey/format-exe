@@ -3,9 +3,9 @@ use crate::pe::RVA;
 
 
 
-/// [`ordinal`](Self::ordinal) |
-/// [`name_table_rva`](Self::name_table_rva) |
-/// [`is_eot`](Self::is_eot)
+/// ∑ [ordinal](Self::ordinal) | [name_table_rva](Self::name_table_rva) | [is_eot](Self::is_eot)<br>
+/// imports of DLL symbols<br>
+/// <br>
 ///
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#import-lookup-table>
@@ -20,10 +20,9 @@ pub trait ImportLookupTableEntry {
     fn ordinal          (&self) -> Option<u16>;
 }
 
-/// `impl` [`ImportLookupTableEntry`]:
-/// [`ordinal`](Self::ordinal) |
-/// [`name_table_rva`](Self::name_table_rva) |
-/// [`is_eot`](Self::is_eot)
+/// ∑ [ordinal](Self::ordinal) | [name_table_rva](Self::name_table_rva) | [is_eot](Self::is_eot) (impl [ImportLookupTableEntry])<br>
+/// Describes the import of a single DLL symbol such as `"XInputGetState"` for 32-bit binaries<br>
+/// <br>
 ///
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#import-lookup-table>
@@ -31,10 +30,11 @@ pub trait ImportLookupTableEntry {
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)] // TODO: PartialOrd, Ord, Hash
 pub struct ImportLookupTableEntry32(u32le);
 
-/// `impl` [`ImportLookupTableEntry`]:
-/// [`ordinal`](Self::ordinal) |
-/// [`name_table_rva`](Self::name_table_rva) |
-/// [`is_eot`](Self::is_eot)
+/// ∑ [ordinal](Self::ordinal) | [name_table_rva](Self::name_table_rva) | [is_eot](Self::is_eot) (impl [ImportLookupTableEntry])<br>
+/// Describes the import of a single DLL symbol such as `"XInputGetState"` for 64-bit binaries<br>
+/// <br>
+///
+/// As [`RVA`]s are limited to 32 bits, this could've reasonably been made a [u32], but it wasn't.
 ///
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#import-lookup-table>

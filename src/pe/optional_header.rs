@@ -2,7 +2,7 @@ use super::*;
 
 
 
-/// [OptionalHeader32] | [OptionalHeader64]
+/// ∑ [OptionalHeader32] | [OptionalHeader64]
 #[derive(Clone, Copy)]
 pub enum OptionalHeader {
     OptionalHeader32(OptionalHeader32),
@@ -19,6 +19,13 @@ impl core::fmt::Debug for OptionalHeader {
 }
 
 impl OptionalHeader {
+    pub fn dll_characteristics(&self) -> DllCharacteristics {
+        match self {
+            Self::OptionalHeader32(oh) => oh.dll_characteristics,
+            Self::OptionalHeader64(oh) => oh.dll_characteristics,
+        }
+    }
+
     pub fn data_directory(&self) -> &DataDirectories {
         match self {
             Self::OptionalHeader32(oh) => &oh.data_directory,

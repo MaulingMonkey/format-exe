@@ -10,7 +10,9 @@ from_memory_struct! {
     /// {
     ///     [virtual_address](struct.DataDirectory.html#structfield.virtual_address): [RVA],
     ///     [size](struct.DataDirectory.html#structfield.size): [u32]
-    /// } &nbsp;&nbsp;&nbsp;&nbsp; Describes a memory region of the loaded executable.
+    /// }<br>
+    /// Describes a memory region of the loaded executable.<br>
+    /// <br>
     ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory>

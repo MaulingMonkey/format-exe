@@ -1,4 +1,5 @@
-use super::*;
+use crate::*;
+use pe::*;
 
 use bytemuck::*;
 
@@ -11,7 +12,9 @@ from_memory_struct! {
     ///     [link_time_date](struct.FileHeader.html#structfield.link_time_date),
     ///     [symbols](struct.FileHeader.html#structfield.symbols),
     ///     ...
-    /// }
+    /// }<br>
+    /// [pe::Header::file_header]: The non-optional, pointer-width independent part of said header<br>
+    /// <br>
     ///
     /// ## References
     /// *   [`Header::file_header`]

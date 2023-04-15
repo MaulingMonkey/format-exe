@@ -6,12 +6,18 @@ use std::fmt::{self, Debug, Formatter};
 
 
 
-/// [I386](Self::I386),
-/// [AMD64](Self::AMD64),
-/// [IA64](Self::IA64),
-/// [ARM](Self::ARM),
-/// [ARM64](Self::ARM64),
-/// ... &nbsp;&nbsp;&nbsp;&nbsp; Machine/instruction architectures
+/// ∑
+/// [I386](Self::I386) |
+/// [AMD64](Self::AMD64) |
+/// [IA64](Self::IA64) |
+/// [ARM](Self::ARM) |
+/// [ARM64](Self::ARM64) |
+/// [THUMB](Self::THUMB) |
+/// [POWERPC](Self::POWERPC) |
+/// [EBC](Self::EBC) |
+/// ...<br>
+/// Machine/instruction architectures<br>
+/// <br>
 ///
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_file_header>

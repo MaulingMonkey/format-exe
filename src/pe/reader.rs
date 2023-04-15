@@ -12,7 +12,8 @@ use std::path::PathBuf;
 
 
 
-/// Wraps a [`ReadAt`] for ease of reading by caching [`pe::Header`], [`pe::SectionHeader`]s, etc.
+/// Wraps a [`ReadAt`] for ease of reading by caching [`pe::Header`], [`pe::SectionHeader`]s, etc.<br>
+/// <br>
 pub struct Reader<R> {
     src:                        Src,
     reader:                     R,
@@ -218,7 +219,8 @@ impl Display for Src {
 
 
 
-/// impl {[`Read`], [`Seek`], [`ReadAt`]} in terms of [`pe::Reader`]'s [`pe::SectionHeader`]s
+/// impl {[`Read`], [`Seek`], [`ReadAt`]} in terms of [`pe::Reader`]'s [`pe::SectionHeader`]s<br>
+/// <br>
 pub struct RvaReader<'r, R> {
     reader:             &'r Reader<R>,
     rva:                u64,

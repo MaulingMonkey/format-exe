@@ -8,7 +8,13 @@ use std::mem::{size_of, size_of_val};
 
 
 
-/// The main [`pe`] header, found at [`mz::Header::pe_header_start`].
+/// ⨯ {
+///     [signature](Self::signature),
+///     [file_header](Self::file_header),
+///     [optional_header](Self::optional_header)
+/// }<br>
+/// The main [`pe`] header, found at [`mz::Header::pe_header_start`].<br>
+/// <br>
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Header {

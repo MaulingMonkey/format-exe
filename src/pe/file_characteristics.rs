@@ -1,10 +1,12 @@
 #[cfg(doc)] use super::*;
 
 from_memory_flags! {
-    /// [EXECUTABLE_IMAGE](Self::EXECUTABLE_IMAGE),
-    /// [LARGE_ADDRESS_AWARE](Self::LARGE_ADDRESS_AWARE),
-    /// [DLL](Self::DLL),
-    /// ...
+    /// [EXECUTABLE_IMAGE](Self::EXECUTABLE_IMAGE) |
+    /// [LARGE_ADDRESS_AWARE](Self::LARGE_ADDRESS_AWARE) |
+    /// [DLL](Self::DLL) |
+    /// ...<br>
+    /// [pe](Reader).[pe_header()](Header).[file_header](FileHeader).[characteristics](FileHeader::characteristics): various flags/metadata<br>
+    /// <br>
     ///
     /// | Example           | Machine   | Value |
     /// | ------------------| ----------| ------|

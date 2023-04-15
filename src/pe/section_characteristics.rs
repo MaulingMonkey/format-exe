@@ -1,8 +1,15 @@
+#[cfg(doc)] use crate::pe;
+
 from_memory_flags! {
-    /// IMAGE_SCN_\*
+    /// CNT_{[CODE](Self::CNT_CODE), [INITIALIZED_DATA](Self::CNT_INITIALIZED_DATA), ...} |
+    /// MEM_{[READ](Self::MEM_READ), [WRITE](Self::MEM_WRITE), [EXECUTE](Self::MEM_EXECUTE), ...} |
+    /// ...<br>
+    /// [pe::SectionHeader::characteristics] indicating what memory settings to give a [pe] section<br>
+    /// <br>
     ///
     /// ## References
     /// *   <https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header>
+    /// *   IMAGE_SCN_\*
     #[repr(transparent)]
     pub struct SectionCharacteristics : u32 {
         const NONE                                  = 0;

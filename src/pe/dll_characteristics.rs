@@ -1,8 +1,12 @@
+#[cfg(doc)] use crate::pe::*;
+
 from_memory_flags! {
-    /// [NX_COMPAT](Self::NX_COMPAT),
-    /// [NO_ISOLATION](Self::NO_ISOLATION),
-    /// [NO_SEH](Self::NO_SEH),
-    /// ... &nbsp;&nbsp;&nbsp;&nbsp; Flags describing the DLL/EXE/Image.
+    /// [NX_COMPAT](Self::NX_COMPAT) |
+    /// [NO_ISOLATION](Self::NO_ISOLATION) |
+    /// [NO_SEH](Self::NO_SEH) |
+    /// ...<br>
+    /// [pe](Reader).[pe_header()](Header).[optional_header](Header::optional_header).unwrap().[dll_characteristics()](OptionalHeader::dll_characteristics): various flags/metadata<br>
+    /// <br>
     ///
     /// ## References
     /// *   [pe::OptionalHeader32::dll_characteristics](crate::pe::OptionalHeader32::dll_characteristics)

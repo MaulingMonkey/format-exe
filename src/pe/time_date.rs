@@ -7,9 +7,9 @@ use std::time::{Duration, SystemTime};
 
 
 
-/// Seconds elapsed since midnight, January 1st 1970, Universal Coordinated Time.
-///
-/// Wrapping issues will occur as early as Febuary 7th, 2106 (2³² seconds later.)
+/// ≈ [u32] seconds elapsed since midnight, January 1st 1970, Universal Coordinated Time.<br>
+/// Wrapping issues will occur as early as Febuary 7th, 2106 (2³² seconds later.)<br>
+/// <br>
 ///
 /// [Leap seconds](https://en.wikipedia.org/wiki/Leap_second) are ignored - all
 /// minutes are assumed to contain 60 seconds.  Presumably:<br>

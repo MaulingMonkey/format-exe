@@ -10,7 +10,9 @@ from_memory_struct! {
     ///     [forwarder_chain](struct.ImportDescriptor.html#structfield.forwarder_chain),
     ///     [dll_ascii_name_rva](struct.ImportDescriptor.html#structfield.dll_ascii_name_rva),
     ///     [iat_rva](struct.ImportDescriptor.html#structfield.iat_rva)
-    /// }
+    /// }<br>
+    /// Describes the import of a single DLL, such as `"KERNEL32.dll"`<br>
+    /// <br>
     ///
     /// ## References
     /// *   [PE Format: Import Directory Table](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#import-directory-table) (learn.microsoft.com)

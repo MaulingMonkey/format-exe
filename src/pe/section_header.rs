@@ -10,6 +10,17 @@ use std::ops::Range;
 
 
 from_memory_struct! {
+    /// {
+    ///     [name](Self::name),
+    ///     [virtual_size](Self::virtual_size),
+    ///     [virtual_address](Self::virtual_address),
+    ///     [size_of_raw_data](Self::size_of_raw_data),
+    ///     ...,
+    ///     [characteristics](Self::characteristics)
+    /// }<br>
+    /// Binary sections (e.g. `".text"`) and how to load them (ranges, read/write permissions, etc.)<br>
+    /// <br>
+    ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_section_header>
     #[repr(C)]

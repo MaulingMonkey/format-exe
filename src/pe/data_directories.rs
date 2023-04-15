@@ -8,8 +8,16 @@ from_memory_struct! {
     ///     [import](struct.DataDirectories.html#structfield.import),
     ///     [resource](struct.DataDirectories.html#structfield.resource),
     ///     [exception](struct.DataDirectories.html#structfield.exception),
+    ///     [security](struct.DataDirectories.html#structfield.security),
+    ///     [basereloc](struct.DataDirectories.html#structfield.basereloc),
+    ///     [debug](struct.DataDirectories.html#structfield.debug),
+    ///     [architecture](struct.DataDirectories.html#structfield.architecture),
+    ///     [globalptr](struct.DataDirectories.html#structfield.globalptr),
+    ///     [tls](struct.DataDirectories.html#structfield.tls),
     ///     ...
-    /// } &nbsp;&nbsp;&nbsp;&nbsp; Describes memory regions of the loaded executable.
+    /// }<br>
+    /// Describes memory regions of the loaded executable<br>
+    /// <br>
     ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_data_directory#remarks>

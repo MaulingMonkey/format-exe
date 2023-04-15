@@ -6,10 +6,14 @@ use std::fmt::{self, Debug, Display, Formatter};
 
 
 
-/// {
+/// ⨯ {
 ///     [major](struct.DataDirectory.html#structfield.major): C,
 ///     [minor](struct.DataDirectory.html#structfield.minor): C
-/// } &nbsp;&nbsp;&nbsp;&nbsp; A version number in the style of e.g. "10.0".
+/// }
+/// where C : [Ord] + [Hash]
+/// <br>
+/// A version number in the style of e.g. "10.0".<br>
+/// <br>
 #[repr(C)]
 #[derive(Clone, Copy, Default, PartialEq, Eq)] // TODO: PartialOrd/Ord/Hash
 pub struct MajorMinorVersion<C> {

@@ -6,10 +6,14 @@ use std::fmt::{self, Debug, Formatter};
 
 
 
-/// [WINDOWS_GUI](Self::WINDOWS_GUI),
-/// [WINDOWS_CUI](Self::WINDOWS_CUI),
-/// [EFI_APPLICATION](Self::EFI_APPLICATION),
-/// ... &nbsp;&nbsp;&nbsp;&nbsp; Subsystems
+/// ∑
+/// [WINDOWS_GUI](Self::WINDOWS_GUI) |
+/// [WINDOWS_CUI](Self::WINDOWS_CUI) |
+/// [POSIX_CUI](Self::POSIX_CUI) |
+/// [EFI_APPLICATION](Self::EFI_APPLICATION) |
+/// ...<br>
+/// Windows Subsystem (differentiates GUI, Console, POSIX, and EFI apps among others)<br>
+/// <br>
 ///
 /// ## References
 /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header32>

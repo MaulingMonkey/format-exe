@@ -5,7 +5,16 @@ use bytemuck::*;
 
 
 from_memory_struct! {
-    /// "Optional" header for 64-bit executables/DLLs.
+    /// {
+    ///     [address_of_entry_point](Self::address_of_entry_point),
+    ///     [image_base](Self::image_base),
+    ///     [subsystem](Self::subsystem),
+    ///     [dll_characteristics](Self::dll_characteristics),
+    ///     [data_directory](Self::data_directory),
+    ///     ...
+    /// }<br>
+    /// impl [OptionalHeader]: "Optional" header for 64-bit executables/DLLs.<br>
+    /// <br>
     ///
     /// ## References
     /// *   <https://docs.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-image_optional_header64>
