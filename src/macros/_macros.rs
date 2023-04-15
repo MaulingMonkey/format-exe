@@ -11,6 +11,7 @@ macro_rules! from_memory_struct {
         )*
     ) => {
         $(
+            /// ⨯
             $( #[ $($struct_meta),+ ] )*
             $struct_vis struct $struct_ident {
                 $(
