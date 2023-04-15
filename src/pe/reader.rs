@@ -12,6 +12,7 @@ use std::path::PathBuf;
 
 
 
+/// Wraps a [`ReadAt`] for ease of reading by caching [`pe::Header`], [`pe::SectionHeader`]s, etc.
 pub struct Reader<R> {
     src:                        Src,
     reader:                     R,
@@ -21,6 +22,18 @@ pub struct Reader<R> {
 }
 
 impl Reader<SeeklessFile> {
+    /// Open a PE file and parse some basic headers.
+    ///
+    /// ### Example
+    /// ```
+    /// # use maulingmonkey_format_exe::*;
+    /// let path = std::env::current_exe().expect("unable to get current_exe");
+    /// let pe = pe::Reader::open(path).expect("error reading or parsing current_exe");
+    /// let section0 = pe.pe_section_header(0).expect("current_exe has no sections");
+    /// # if false { // no guarantee the first section is .text
+    /// assert_eq!(".text", section0.name.to_string_lossy()); // not guaranteed but whatever
+    /// # }
+    /// ```
     pub fn open(path: impl Into<PathBuf>) -> io::Result<Self> {
         let path = path.into();
         let file = File::open(&path);
@@ -30,19 +43,50 @@ impl Reader<SeeklessFile> {
 }
 
 impl<R: ReadAt> Reader<R> {
+    /// Read a PE file and parse some basic headers.  Prefer [`Reader::open`] for better error messages.
+    ///
+    /// ### Example
+    /// ```
+    /// # use maulingmonkey_format_exe::*;
+    /// let path = std::env::current_exe().expect("unable to get current_exe");
+    /// let file = std::fs::File::open(path).expect("unable to open current_exe");
+    /// let file = maulingmonkey_io_adapters::SeeklessFile::from(file);
+    /// let pe = pe::Reader::read(file).expect("error reading or parsing current_exe");
+    /// let section0 = pe.pe_section_header(0).expect("current_exe has no sections");
+    /// # if false { // no guarantee the first section is .text
+    /// assert_eq!(".text", section0.name.to_string_lossy()); // not guaranteed but whatever
+    /// # }
+    /// ```
     pub fn read(reader: R) -> io::Result<Self> { Self::read_src(reader, Src::Unknown) }
 
+    /// Read the raw data referenced by a [`pe::SectionHeader`]
+    ///
+    /// ### Errors
+    /// *   [`io::ErrorKind::InvalidInput`] if `idx` >= `self.pe_section_headers().len()`
+    /// *   [`io::ErrorKind::UnexpectedEof`] if the [`pe::SectionHeader`] references outside the underlying reader.
+    /// *   [`io::Error`] forwarded from [`ReadAt::read_exact_at`]
     pub fn read_pe_section_data_by_idx(&self, idx: impl TryInto<usize>) -> io::Result<Vec<u8>> {
-        let header = *self.pe_section_header(idx);
-        self.read_pe_section_data(&header)
+        self.read_pe_section_data(self.pe_section_header(idx).ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "pe section idx out of bounds"))?)
     }
 
+    /// Read the raw data referenced by a [`pe::SectionHeader`]
+    ///
+    /// ### Errors
+    /// *   [`io::ErrorKind::UnexpectedEof`] if the [`pe::SectionHeader`] references outside the underlying reader.
+    /// *   [`io::Error`] forwarded from [`ReadAt::read_exact_at`]
     pub fn read_pe_section_data(&self, header: &pe::SectionHeader) -> io::Result<Vec<u8>> {
         let mut data = vec![0u8; usize::try_from(header.size_of_raw_data).expect("unable to allocate pe::SectionHeader::size_of_raw_data bytes")];
         self.read_pe_section_data_inplace(header, 0, &mut data)?;
         Ok(data)
     }
 
+    /// Read the raw data referenced by a [`pe::SectionHeader`]
+    ///
+    /// May return less data than `data.len()`
+    ///
+    /// ### Errors
+    /// *   [`io::ErrorKind::UnexpectedEof`] if the [`pe::SectionHeader`] references outside the underlying reader.
+    /// *   [`io::Error`] forwarded from [`ReadAt::read_exact_at`]
     pub fn read_pe_section_data_inplace<'a>(&'_ self, header: &'_ pe::SectionHeader, offset: u32, data: &'a mut [u8]) -> io::Result<&'a [u8]> {
         let ptr = u64::from(header.pointer_to_raw_data.map_or(0, |ptr| ptr.into())) + u64::from(offset);
         let n = usize::try_from(header.size_of_raw_data.saturating_sub(offset)).unwrap_or(!0).min(data.len());
@@ -50,6 +94,11 @@ impl<R: ReadAt> Reader<R> {
         Ok(&data[..n])
     }
 
+    /// Read data from an [`RVA`] range from one or more [`pe::SectionHeader`].
+    ///
+    /// ### Errors
+    /// *   [`io::ErrorKind::InvalidInput`] if `rva` isn't entirely mapped by sections
+    /// *   ...?
     pub fn read_exact_rva<'a>(&'_ self, rva: Range<RVA>, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
         scratch.resize(rva.end.to_usize() - rva.start.to_usize(), 0u8);
 
@@ -68,16 +117,28 @@ impl<R: ReadAt> Reader<R> {
         Ok(&scratch[..])
     }
 
+    /// Read a `b'\0'`-terminated string starting from `rva` using `scratch` as a temp buffer.
+    ///
+    /// ### Errors
+    /// *   ...?
     pub fn read_strz_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a [u8]> {
         scratch.clear();
         BufReader::new(RvaReader::new(self, rva)).read_until(0, scratch)?;
         Ok(scratch[..].strip_suffix(&[0]).unwrap_or(&scratch[..]))
     }
 
+    /// Read a `b'\0'`-terminated UTF8 string starting from `rva` using `scratch` as a temp buffer.
+    ///
+    /// ### Errors
+    /// *   [`io::ErrorKind::InvalidData`] if the string wasn't UTF8
     pub fn read_utf8z_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a str> {
         Ok(std::str::from_utf8(self.read_strz_rva(rva, scratch)?).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?)
     }
 
+    /// Read a `b'\0'`-terminated ASCII (7-bit) string starting from `rva` using `scratch` as a temp buffer.
+    ///
+    /// ### Errors
+    /// *   [`io::ErrorKind::InvalidData`] if the string wasn't ASCII (7-bit)
     pub fn read_asciiz_rva<'a>(&'_ self, rva: RVA, scratch: &'a mut Vec<u8>) -> io::Result<&'a str> {
         let s = self.read_utf8z_rva(rva, scratch)?;
         if !s.is_ascii() { return Err(io::Error::new(io::ErrorKind::InvalidData, "string is not ASCII")); }
@@ -106,31 +167,22 @@ impl<R: ReadAt> Reader<R> {
 }
 
 impl<R> Reader<R> {
-    pub fn mz_header(&self) -> &mz::Header { &self.mz_header }
-    pub fn pe_header(&self) -> &pe::Header { &self.pe_header }
-    pub fn pe_section_headers(&self) -> &[pe::SectionHeader] { &self.pe_section_headers[..] }
+    // #[allow(missing_docs)]: Honestly these are all pretty self-explanatory
+    #[allow(missing_docs)] pub fn mz_header(&self) -> &mz::Header { &self.mz_header }
+    #[allow(missing_docs)] pub fn pe_header(&self) -> &pe::Header { &self.pe_header }
+    #[allow(missing_docs)] pub fn pe_section_headers(&self) -> &[pe::SectionHeader] { &self.pe_section_headers[..] }
 
-    pub fn data_directory(&self) -> &pe::DataDirectories {
+    #[allow(missing_docs)] pub fn data_directory(&self) -> &pe::DataDirectories {
         self.pe_header.optional_header.as_ref().map_or(
             &pe::DataDirectories::EMPTY,
             |oh| oh.data_directory(),
         )
     }
 
-    pub fn get_pe_section_header(&self, idx: impl TryInto<usize>) -> Option<&pe::SectionHeader> {
-        let idx = idx.try_into().ok()?;
-        self.pe_section_headers.get(idx)
-    }
-
-    pub fn pe_section_header(&self, idx: impl TryInto<usize>) -> &pe::SectionHeader {
-        self.get_pe_section_header(idx).expect("pe::Reader::pe_section_header(idx): idx out of bounds")
+    #[allow(missing_docs)] pub fn pe_section_header(&self, idx: impl TryInto<usize>) -> Option<&pe::SectionHeader> {
+        idx.try_into().ok().and_then(|idx| self.pe_section_headers.get(idx))
     }
 }
-
-#[test] fn self_test() {
-    let _exe = Reader::open(std::env::args_os().next().expect("argv[0] not available")).expect("unable to read exe");
-}
-
 
 
 
@@ -166,6 +218,7 @@ impl Display for Src {
 
 
 
+/// impl {[`Read`], [`Seek`], [`ReadAt`]} in terms of [`pe::Reader`]'s [`pe::SectionHeader`]s
 pub struct RvaReader<'r, R> {
     reader:             &'r Reader<R>,
     rva:                u64,
@@ -180,6 +233,7 @@ impl<'r, R> Clone for RvaReader<'r, R> { // always cloneable even if R isn't
 }
 
 impl<'r, R: ReadAt> RvaReader<'r, R> {
+    /// Create an [`RvaReader`], starting at a seek point of `rva`.
     pub fn new(reader: &'r Reader<R>, rva: RVA) -> Self {
         let mut rr = Self {
             reader,
