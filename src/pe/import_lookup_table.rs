@@ -3,8 +3,8 @@ use crate::pe::RVA;
 
 
 
-/// ∑ [ordinal](Self::ordinal) | [name_table_rva](Self::name_table_rva) | [is_eot](Self::is_eot)<br>
-/// imports of DLL symbols<br>
+/// ∑ [ordinal](Self::ordinal) | [name_table_rva](Self::name_table_rva) | [is_eot](Self::is_eot) (impl by [ImportLookupTableEntry32], [ImportLookupTableEntry64])<br>
+/// Describes the import of a single DLL symbol such as `"XInputGetState"`<br>
 /// <br>
 ///
 /// ## References
